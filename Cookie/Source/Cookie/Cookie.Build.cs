@@ -21,7 +21,9 @@ public class Cookie : ModuleRules
 			"Slate"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[] {
+			"AdvancedSessions",
+		});
 
 		PublicIncludePaths.AddRange(new string[] {
 			"Cookie",
