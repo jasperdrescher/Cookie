@@ -1,2 +1,19 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Unreal Engine file types
+*.uasset filter=lfs diff=lfs merge=lfs -text
+*.umap filter=lfs diff=lfs merge=lfs -text
+*.udk filter=lfs diff=lfs merge=lfs -text
+*.upk filter=lfs diff=lfs merge=lfs -text
+*.upack filter=lfs diff=lfs merge=lfs binary
+*.ddc filter=lfs diff=lfs merge=lfs binary
+*.locres filter=lfs diff=lfs merge=lfs -text
+*.locmeta filter=lfs diff=lfs merge=lfs -text
+*.ico filter=lfs diff=lfs merge=lfs -text
+
+# Unreal Engine project files
+Projects/**/Content/** filter=lfs diff=lfs merge=lfs binary 
+Projects/**/DerivedDataCache/** filter=lfs diff=lfs merge=lfs binary
+Projects/**/Binaries/** filter=lfs diff=lfs merge=lfs binary
+
