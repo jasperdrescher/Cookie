@@ -23,6 +23,7 @@ public class Cookie : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"AdvancedSessions",
+			"AdvancedSteamSessions",
 		});
 
 		PublicIncludePaths.AddRange(new string[] {
