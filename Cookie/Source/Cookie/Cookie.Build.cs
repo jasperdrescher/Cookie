@@ -25,19 +25,12 @@ public class Cookie : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] {
 			"Cookie",
-			"Cookie/Variant_Platforming",
-			"Cookie/Variant_Platforming/Animation",
 			"Cookie/Variant_Combat",
 			"Cookie/Variant_Combat/AI",
 			"Cookie/Variant_Combat/Animation",
 			"Cookie/Variant_Combat/Gameplay",
 			"Cookie/Variant_Combat/Interfaces",
 			"Cookie/Variant_Combat/UI",
-			"Cookie/Variant_SideScrolling",
-			"Cookie/Variant_SideScrolling/AI",
-			"Cookie/Variant_SideScrolling/Gameplay",
-			"Cookie/Variant_SideScrolling/Interfaces",
-			"Cookie/Variant_SideScrolling/UI"
 		});
 
 		// Uncomment if you are using Slate UI
