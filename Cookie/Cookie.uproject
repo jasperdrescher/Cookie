@@ -191,6 +191,10 @@
 		{
 			"Name": "GoogleCloudMessaging",
 			"Enabled": false
+		},
+		{
+			"Name": "OnlineSubsystemSteam",
+			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [
