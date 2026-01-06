@@ -2,7 +2,9 @@
 
 #include "CookieCharacter.h"
 
+#include "Actors/CkCookiePickup.h"
 #include "Camera/CameraComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Cookie.h"
 #include "Engine/LocalPlayer.h"
@@ -12,7 +14,10 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
+#include "Sound/SoundBase.h"
 
 ACookieCharacter::ACookieCharacter()
 {
@@ -47,6 +52,14 @@ ACookieCharacter::ACookieCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	OverlapBoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox"));
+	OverlapBoxComponent->SetupAttachment(RootComponent);
+	OverlapBoxComponent->SetBoxExtent(FVector(64.f, 64.f, 86.f));
+	OverlapBoxComponent->SetRelativeLocation(FVector(50.f, 0.f, 0.f));
+	OverlapBoxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	OverlapBoxComponent->SetCollisionObjectType(ECC_Pawn);
+	OverlapBoxComponent->OnComponentBeginOverlap.AddDynamic(this, &ACookieCharacter::OnOverlapBegin);
 
 	MaxHealth = 100.0f;
 	CurrentHealth = MaxHealth;
@@ -228,4 +241,30 @@ void ACookieCharacter::SetCookies(int cookiesValue)
 		Cookies = FMath::Clamp(cookiesValue, 0, cookiesValue);
 		OnCookiesUpdate();
 	}
+}
+
+void ACookieCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!OtherActor || OtherActor == this)
+		return;
+
+	UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("BeginOverlap with: %s"), *OtherActor->GetName()), true, true, FLinearColor::Green, 1.5f);
+
+	if (HasAuthority())
+	{
+		if (Cast<ACkCookiePickup>(OtherActor) != nullptr)
+		{
+			const FVector actorLocation = OtherActor->GetActorLocation();
+			MulticastPickupCookie(actorLocation);
+			OtherActor->Destroy();
+		}
+	}
+}
+
+void ACookieCharacter::MulticastPickupCookie_Implementation(const FVector_NetQuantize& Location)
+{
+	UGameplayStatics::PlaySoundAtLocation(
+		this,
+		CookiePickupSound,
+		Location);
 }

@@ -2,9 +2,11 @@
 
 #pragma once
 
+#include "Components/BoxComponent.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+
 #include "CookieCharacter.generated.h"
 
 class USpringArmComponent;
@@ -14,7 +16,7 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
-UCLASS(abstract)
+UCLASS()
 class ACookieCharacter : public ACharacter
 {
 	GENERATED_BODY()
@@ -50,6 +52,18 @@ protected:
 	void OnRep_Cookies();
 
 	void OnCookiesUpdate();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Audio")
+	USoundBase* CookiePickupSound = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
+	UBoxComponent* OverlapBoxComponent;
+
+	UFUNCTION()
+	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPickupCookie(const FVector_NetQuantize& Location);
 
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -97,7 +111,6 @@ public:
 	void SetCookies(int cookiesValue);
 
 protected:
-
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
