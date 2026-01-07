@@ -9,7 +9,7 @@ ACkCookiePickup::ACkCookiePickup()
 	PrimaryActorTick.bCanEverTick = true;
 
 	bReplicates = true;
-	SetReplicateMovement(true);
+	SetReplicateMovement(false);
 
 	SceneRootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRootComponent;
@@ -19,9 +19,11 @@ ACkCookiePickup::ACkCookiePickup()
 	StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	StaticMeshComponent->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 	StaticMeshComponent->SetGenerateOverlapEvents(true);
+	StaticMeshComponent->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
 	RotatingMovement = CreateDefaultSubobject<URotatingMovementComponent>(TEXT("RotatingMovement"));
 	RotatingMovement->RotationRate = FRotator(SpinSpeedPitch, SpinSpeedYaw, SpinSpeedRoll);
+	RotatingMovement->bUpdateOnlyIfRendered = true;
 }
 
 void ACkCookiePickup::BeginPlay()
