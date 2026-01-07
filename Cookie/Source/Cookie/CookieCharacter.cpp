@@ -67,6 +67,11 @@ ACookieCharacter::ACookieCharacter()
 	CurrentHealth = MaxHealth;
 
 	Cookies = 0;
+
+	PrimaryActorTick.bCanEverTick = true;
+
+	bReplicates = true;
+	SetReplicateMovement(true);
 }
 
 void ACookieCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
