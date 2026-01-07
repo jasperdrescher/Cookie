@@ -55,10 +55,12 @@ ACookieCharacter::ACookieCharacter()
 
 	OverlapBoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox"));
 	OverlapBoxComponent->SetupAttachment(RootComponent);
-	OverlapBoxComponent->SetBoxExtent(FVector(64.f, 64.f, 86.f));
+	OverlapBoxComponent->SetBoxExtent(FVector(48.f, 48.f, 86.f));
 	OverlapBoxComponent->SetRelativeLocation(FVector(50.f, 0.f, 0.f));
 	OverlapBoxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	OverlapBoxComponent->SetCollisionObjectType(ECC_Pawn);
+	OverlapBoxComponent->SetCollisionProfileName("OverlapAllDynamic");
+	OverlapBoxComponent->SetGenerateOverlapEvents(true);
+	OverlapBoxComponent->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	OverlapBoxComponent->OnComponentBeginOverlap.AddDynamic(this, &ACookieCharacter::OnOverlapBegin);
 
 	MaxHealth = 100.0f;
@@ -243,12 +245,10 @@ void ACookieCharacter::SetCookies(int cookiesValue)
 	}
 }
 
-void ACookieCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void ACookieCharacter::OnOverlapBegin(UPrimitiveComponent* /*OverlappedComp*/, AActor* OtherActor, UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/, bool /*bFromSweep*/, const FHitResult& /*SweepResult*/)
 {
 	if (!OtherActor || OtherActor == this)
 		return;
-
-	UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("BeginOverlap with: %s"), *OtherActor->GetName()), true, true, FLinearColor::Green, 1.5f);
 
 	if (HasAuthority())
 	{
