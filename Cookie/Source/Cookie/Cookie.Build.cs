@@ -18,7 +18,8 @@ public class Cookie : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"RHI"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
