@@ -108,7 +108,7 @@ public:
 	FORCEINLINE int GetCookies() const { return Cookies; }
 
 	UFUNCTION(BlueprintCallable, Category = "Cookies")
-	void SetCookies(int cookiesValue);
+	void SetCookies(int CookiesValue);
 
 protected:
 	/** Initialize input action bindings */

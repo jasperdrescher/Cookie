@@ -219,21 +219,16 @@ void ACookieCharacter::OnCookiesUpdate()
 	//Client-specific functionality
 	if (IsLocallyControlled())
 	{
-		FString cookieMessage = FString::Printf(TEXT("You now have %i cookies."), Cookies);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, cookieMessage);
+		FString cookiesMessage = FString::Printf(TEXT("You now have %i cookies."), Cookies);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, cookiesMessage);
 	}
 
 	//Server-specific functionality
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		FString healthMessage = FString::Printf(TEXT("%s now has %i cookies."), *GetFName().ToString(), Cookies);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
+		FString cookiesMessage = FString::Printf(TEXT("%s now has %i cookies."), *GetFName().ToString(), Cookies);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, cookiesMessage);
 	}
-
-	//Functions that occur on all machines.
-	/*
-		Any special functionality that should occur as a result of damage or death should be placed here.
-	*/
 }
 
 void ACookieCharacter::OnRep_Cookies()
@@ -241,11 +236,11 @@ void ACookieCharacter::OnRep_Cookies()
 	OnCookiesUpdate();
 }
 
-void ACookieCharacter::SetCookies(int cookiesValue)
+void ACookieCharacter::SetCookies(int CookiesValue)
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		Cookies = FMath::Clamp(cookiesValue, 0, cookiesValue);
+		Cookies = FMath::Clamp(CookiesValue, 0, CookiesValue);
 		OnCookiesUpdate();
 	}
 }
@@ -262,6 +257,8 @@ void ACookieCharacter::OnOverlapBegin(UPrimitiveComponent* /*OverlappedComp*/, A
 			const FVector actorLocation = OtherActor->GetActorLocation();
 			MulticastPickupCookie(actorLocation);
 			OtherActor->Destroy();
+
+			SetCookies(Cookies + 1);
 		}
 	}
 }
