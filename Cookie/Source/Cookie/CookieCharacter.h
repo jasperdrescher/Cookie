@@ -12,6 +12,8 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
+class UWidgetComponent;
+class UCkNameTagWidget;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -64,6 +66,20 @@ protected:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPickupCookie(const FVector_NetQuantize& Location);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	UWidgetComponent* NameTagWidgetComponent;
+
+	UCkNameTagWidget* NameTagWidget = nullptr;
+
+	UFUNCTION(Server, Reliable)
+	void Server_RefreshNameTag();
+
+	virtual void BeginPlay() override;
+
+	virtual void OnRep_PlayerState() override;
+
+	void RefreshNameTag();
 
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")

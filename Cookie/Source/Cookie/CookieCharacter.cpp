@@ -6,18 +6,21 @@
 #include "Camera/CameraComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "Cookie.h"
 #include "Engine/LocalPlayer.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/PlayerState.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Sound/SoundBase.h"
+#include "UI/CkNameTagWidget.h"
 
 ACookieCharacter::ACookieCharacter()
 {
@@ -63,6 +66,17 @@ ACookieCharacter::ACookieCharacter()
 	OverlapBoxComponent->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	OverlapBoxComponent->OnComponentBeginOverlap.AddDynamic(this, &ACookieCharacter::OnOverlapBegin);
 
+	NameTagWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("Nameplate"));
+	NameTagWidgetComponent->SetupAttachment(GetMesh());
+	NameTagWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+	NameTagWidgetComponent->SetDrawSize(FVector2D(200.f, 40.f));
+	NameTagWidgetComponent->SetPivot(FVector2D(0.5f, 0.f));
+	NameTagWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, 110.f));
+	NameTagWidgetComponent->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
+	NameTagWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	NameTagWidgetComponent->SetReceivesDecals(false);
+	NameTagWidgetComponent->SetTwoSided(true);
+
 	MaxHealth = 100.0f;
 	CurrentHealth = MaxHealth;
 
@@ -72,6 +86,13 @@ ACookieCharacter::ACookieCharacter()
 
 	bReplicates = true;
 	SetReplicateMovement(true);
+}
+
+void ACookieCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	RefreshNameTag();
 }
 
 void ACookieCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -160,14 +181,12 @@ void ACookieCharacter::GetLifetimeReplicatedProps(TArray <FLifetimeProperty>& Ou
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	//Replicate current health.
 	DOREPLIFETIME(ACookieCharacter, CurrentHealth);
 	DOREPLIFETIME(ACookieCharacter, Cookies);
 }
 
 void ACookieCharacter::OnHealthUpdate()
 {
-	//Client-specific functionality
 	if (IsLocallyControlled())
 	{
 		FString healthMessage = FString::Printf(TEXT("You now have %f health remaining."), CurrentHealth);
@@ -180,17 +199,11 @@ void ACookieCharacter::OnHealthUpdate()
 		}
 	}
 
-	//Server-specific functionality
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		FString healthMessage = FString::Printf(TEXT("%s now has %f health remaining."), *GetFName().ToString(), CurrentHealth);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
 	}
-
-	//Functions that occur on all machines.
-	/*
-		Any special functionality that should occur as a result of damage or death should be placed here.
-	*/
 }
 
 void ACookieCharacter::OnRep_CurrentHealth()
@@ -216,14 +229,12 @@ float ACookieCharacter::TakeDamage(float DamageTaken, struct FDamageEvent const&
 
 void ACookieCharacter::OnCookiesUpdate()
 {
-	//Client-specific functionality
 	if (IsLocallyControlled())
 	{
 		FString cookiesMessage = FString::Printf(TEXT("You now have %i cookies."), Cookies);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, cookiesMessage);
 	}
 
-	//Server-specific functionality
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		FString cookiesMessage = FString::Printf(TEXT("%s now has %i cookies."), *GetFName().ToString(), Cookies);
@@ -269,4 +280,64 @@ void ACookieCharacter::MulticastPickupCookie_Implementation(const FVector_NetQua
 		this,
 		CookiePickupSound,
 		Location);
+}
+
+void ACookieCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	RefreshNameTag();
+
+	Server_RefreshNameTag();
+}
+
+void ACookieCharacter::RefreshNameTag()
+{
+	if (!NameTagWidget)
+	{
+		if (UUserWidget* NameTagUserWidget = NameTagWidgetComponent->GetUserWidgetObject())
+		{
+			NameTagWidget = Cast<UCkNameTagWidget>(NameTagUserWidget);
+		}
+	}
+
+	const APlayerState* NameTagPlayerState = GetPlayerState();
+	if (NameTagWidget && NameTagPlayerState)
+	{
+		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName()));
+
+		/*const FLinearColor TeamColor = GetTeamColorFromPS(NameTagPlayerState);
+		NameTagWidget->SetNameColor(TeamColor);*/
+	}
+
+	const bool bIsLocalControlled = IsLocallyControlled();
+	if (NameTagWidgetComponent)
+	{
+		NameTagWidgetComponent->SetVisibility(!bIsLocalControlled);
+	}
+}
+
+void ACookieCharacter::Server_RefreshNameTag_Implementation()
+{
+	if (!NameTagWidget)
+	{
+		if (UUserWidget* NameTagUserWidget = NameTagWidgetComponent->GetUserWidgetObject())
+		{
+			NameTagWidget = Cast<UCkNameTagWidget>(NameTagUserWidget);
+		}
+	}
+
+	const APlayerState* NameTagPlayerState = GetPlayerState();
+	if (NameTagWidget && NameTagPlayerState)
+	{
+		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName()));
+
+		/*const FLinearColor TeamColor = GetTeamColorFromPS(NameTagPlayerState);
+		NameTagWidget->SetNameColor(TeamColor);*/
+	}
+
+	const bool bIsLocalControlled = IsLocallyControlled();
+	if (NameTagWidgetComponent)
+	{
+		NameTagWidgetComponent->SetVisibility(!bIsLocalControlled);
+	}
 }
