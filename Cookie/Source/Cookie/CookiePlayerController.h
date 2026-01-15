@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+
 #include "CookiePlayerController.generated.h"
 
 class UInputMappingContext;
@@ -17,6 +18,10 @@ UCLASS(abstract)
 class ACookiePlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+public:
+	UFUNCTION(Client, Reliable)
+	void ClientPostLogin(const FString& NewPlayerName, const FString& RoleText);
 	
 protected:
 
@@ -48,5 +53,4 @@ protected:
 
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;
-
 };

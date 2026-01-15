@@ -1,12 +1,13 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-
 #include "CookiePlayerController.h"
-#include "EnhancedInputSubsystems.h"
-#include "Engine/LocalPlayer.h"
-#include "InputMappingContext.h"
+
 #include "Blueprint/UserWidget.h"
 #include "Cookie.h"
+#include "Engine/Engine.h"
+#include "Engine/LocalPlayer.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 void ACookiePlayerController::BeginPlay()
@@ -64,4 +65,16 @@ bool ACookiePlayerController::ShouldUseTouchControls() const
 {
 	// are we on a mobile platform? Should we force touch?
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
+}
+
+void ACookiePlayerController::ClientPostLogin_Implementation(const FString& NewPlayerName, const FString& RoleText)
+{
+	if (!IsLocalController())
+		return;
+	
+	if (GEngine)
+	{
+		const FString ConnectionMessage = FString::Printf(TEXT("%s (%s) connected"), *NewPlayerName, *RoleText);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, ConnectionMessage);
+	}
 }
