@@ -101,6 +101,7 @@ protected:
 	float CachedAttackInputTime = 0.0f;
 
 	/** If true, the character is currently playing an attack animation */
+	UPROPERTY(Replicated)
 	bool bIsAttacking = false;
 
 	/** Distance ahead of the character that melee attack sphere collision traces will extend */
@@ -144,6 +145,7 @@ protected:
 	float ComboInputCacheTimeTolerance = 0.45f;
 
 	/** Index of the current stage of the melee attack combo */
+	UPROPERTY(Replicated)
 	int32 ComboCount = 0;
 
 	/** AnimMontage that will play for charged attacks */
@@ -159,9 +161,11 @@ protected:
 	FName ChargeAttackSection;
 
 	/** Flag that determines if the player is currently holding the charged attack input */
+	UPROPERTY(Replicated)
 	bool bIsChargingAttack = false;
 	
 	/** If true, the charged attack hold check has been tested at least once */
+	UPROPERTY(Replicated)
 	bool bHasLoopedChargedAttack = false;
 
 	/** Camera boom length while the character is dead */
@@ -310,6 +314,12 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
 	void ReceivedDamage(float Damage, const FVector& ImpactPoint, const FVector& DamageDirection);
 
+	UFUNCTION(Server, Reliable)
+	void ServerChargedAttack();
+
+	UFUNCTION(Server, Reliable)
+	void ServerComboAttack();
+
 protected:
 
 	/** Initialization */
@@ -323,6 +333,8 @@ protected:
 
 	/** Handles possessed initialization */
 	virtual void NotifyControllerChanged() override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 

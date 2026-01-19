@@ -1,20 +1,22 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-
 #include "CombatCharacter.h"
+
+#include "Animation/AnimInstance.h"
+#include "Camera/CameraComponent.h"
+#include "CombatLifeBar.h"
+#include "CombatPlayerController.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Engine/DamageEvents.h"
+#include "Engine/LocalPlayer.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Components/SkeletalMeshComponent.h"
-#include "Camera/CameraComponent.h"
-#include "EnhancedInputSubsystems.h"
-#include "EnhancedInputComponent.h"
-#include "CombatLifeBar.h"
-#include "Engine/DamageEvents.h"
+#include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
-#include "Engine/LocalPlayer.h"
-#include "CombatPlayerController.h"
 
 ACombatCharacter::ACombatCharacter()
 {
@@ -184,6 +186,18 @@ void ACombatCharacter::ResetHP()
 
 void ACombatCharacter::ComboAttack()
 {
+	if (!HasAuthority())
+	{
+		if (ComboAttackMontage && IsLocallyControlled())
+		{
+			PlayAnimMontage(ComboAttackMontage, 1.f);
+		}
+
+		ServerComboAttack();
+
+		return;
+	}
+
 	// raise the attacking flag
 	bIsAttacking = true;
 
@@ -193,23 +207,38 @@ void ACombatCharacter::ComboAttack()
 	// notify enemies they are about to be attacked
 	NotifyEnemiesOfIncomingAttack();
 
-	// play the attack montage
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	if (ComboAttackMontage)
 	{
-		const float MontageLength = AnimInstance->Montage_Play(ComboAttackMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
-
-		// subscribe to montage completed and interrupted events
-		if (MontageLength > 0.0f)
+		const float MontageLength = PlayAnimMontage(ComboAttackMontage, 1.f);
+		if (MontageLength > 0.f)
 		{
-			// set the end delegate for the montage
-			AnimInstance->Montage_SetEndDelegate(OnAttackMontageEnded, ComboAttackMontage);
+			if (UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+			{
+				AnimInst->Montage_SetEndDelegate(OnAttackMontageEnded, ComboAttackMontage);
+			}
 		}
 	}
+}
 
+void ACombatCharacter::ServerComboAttack_Implementation()
+{
+	ComboAttack();
 }
 
 void ACombatCharacter::ChargedAttack()
 {
+	if (!HasAuthority())
+	{
+		if (ChargedAttackMontage && IsLocallyControlled())
+		{
+			PlayAnimMontage(ChargedAttackMontage, 1.f);
+		}
+
+		ServerComboAttack();
+
+		return;
+	}
+
 	// raise the attacking flag
 	bIsAttacking = true;
 
@@ -219,18 +248,22 @@ void ACombatCharacter::ChargedAttack()
 	// notify enemies they are about to be attacked
 	NotifyEnemiesOfIncomingAttack();
 
-	// play the charged attack montage
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	if (ChargedAttackMontage)
 	{
-		const float MontageLength = AnimInstance->Montage_Play(ChargedAttackMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
-
-		// subscribe to montage completed and interrupted events
-		if (MontageLength > 0.0f)
+		const float MontageLength = PlayAnimMontage(ChargedAttackMontage, 1.f);
+		if (MontageLength > 0.f)
 		{
-			// set the end delegate for the montage
-			AnimInstance->Montage_SetEndDelegate(OnAttackMontageEnded, ChargedAttackMontage);
+			if (UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+			{
+				AnimInst->Montage_SetEndDelegate(OnAttackMontageEnded, ChargedAttackMontage);
+			}
 		}
 	}
+}
+
+void ACombatCharacter::ServerChargedAttack_Implementation()
+{
+	ChargedAttack();
 }
 
 void ACombatCharacter::AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
@@ -552,3 +585,11 @@ void ACombatCharacter::NotifyControllerChanged()
 	}
 }
 
+void ACombatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ACombatCharacter, bIsAttacking);
+	DOREPLIFETIME(ACombatCharacter, ComboCount);
+	DOREPLIFETIME(ACombatCharacter, bIsChargingAttack);
+	DOREPLIFETIME(ACombatCharacter, bHasLoopedChargedAttack);
+}
