@@ -1,16 +1,14 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-
 #include "Variant_Combat/CombatPlayerController.h"
-#include "EnhancedInputSubsystems.h"
-#include "InputMappingContext.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/PlayerStart.h"
+
+#include "Blueprint/UserWidget.h"
 #include "CombatCharacter.h"
+#include "Cookie.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
-#include "Blueprint/UserWidget.h"
-#include "Cookie.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 void ACombatPlayerController::BeginPlay()
