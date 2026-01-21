@@ -4,6 +4,7 @@
 
 #include "Actors/CkCookiePickup.h"
 #include "Camera/CameraComponent.h"
+#include "Core/CkGamePlayerState.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
@@ -300,10 +301,11 @@ void ACookieCharacter::RefreshNameTag()
 		}
 	}
 
-	const APlayerState* NameTagPlayerState = GetPlayerState();
+	const ACkGamePlayerState* NameTagPlayerState = Cast<ACkGamePlayerState>(GetPlayerState());
 	if (NameTagWidget && NameTagPlayerState)
 	{
-		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName()));
+		const FString RoleText = NameTagPlayerState->bIsHost ? "-Host" : "-Client";
+		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName() + RoleText));
 
 		/*const FLinearColor TeamColor = GetTeamColorFromPS(NameTagPlayerState);
 		NameTagWidget->SetNameColor(TeamColor);*/
@@ -326,10 +328,11 @@ void ACookieCharacter::Server_RefreshNameTag_Implementation()
 		}
 	}
 
-	const APlayerState* NameTagPlayerState = GetPlayerState();
+	const ACkGamePlayerState* NameTagPlayerState = Cast<ACkGamePlayerState>(GetPlayerState());
 	if (NameTagWidget && NameTagPlayerState)
 	{
-		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName()));
+		const FString RoleText = NameTagPlayerState->bIsHost ? "-Host" : "-Client";
+		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName() + RoleText));
 
 		/*const FLinearColor TeamColor = GetTeamColorFromPS(NameTagPlayerState);
 		NameTagWidget->SetNameColor(TeamColor);*/

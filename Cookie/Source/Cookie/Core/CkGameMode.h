@@ -16,5 +16,5 @@ protected:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
 private:
-	FString GetRoleTextForJoiningPlayer(APlayerController* NewPlayer) const;
+	bool GetRoleForJoiningPlayer(APlayerController* NewPlayer) const;
 };

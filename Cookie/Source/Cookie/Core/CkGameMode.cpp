@@ -3,6 +3,7 @@
 #include "Core/CkGameMode.h"
 
 #include "CookiePlayerController.h"
+#include "Core/CkGamePlayerState.h"
 #include "Engine/Engine.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
@@ -12,9 +13,10 @@ void ACkGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	const APlayerState* NewPlayerState = NewPlayer ? NewPlayer->PlayerState : nullptr;
+	ACkGamePlayerState* NewPlayerState = NewPlayer ? Cast<ACkGamePlayerState>(NewPlayer->PlayerState) : nullptr;
 	const FString NewPlayerName = NewPlayerState ? NewPlayerState->GetPlayerName() : TEXT("Unknown");
-	const FString RoleText = GetRoleTextForJoiningPlayer(NewPlayer);
+	const bool bIsHost = GetRoleForJoiningPlayer(NewPlayer);
+	const FString RoleText = bIsHost ? "Host" : "Client";
 
 	if (GEngine)
 	{
@@ -26,11 +28,12 @@ void ACkGameMode::PostLogin(APlayerController* NewPlayer)
 	{
 		NewPlayerController->ClientPostLogin(NewPlayerName, RoleText);
 	}
+
+	NewPlayerState->bIsHost = bIsHost;
 }
 
-FString ACkGameMode::GetRoleTextForJoiningPlayer(APlayerController* NewPlayer) const
+bool ACkGameMode::GetRoleForJoiningPlayer(APlayerController* NewPlayer) const
 {
 	const bool bIsListenServer = (GetNetMode() == NM_ListenServer);
-	const bool bIsHostPlayer = bIsListenServer && NewPlayer->IsLocalController();
-	return bIsHostPlayer ? TEXT("Host") : TEXT("Client");
+	return bIsListenServer && NewPlayer->IsLocalController();
 }
