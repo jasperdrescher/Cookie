@@ -37,6 +37,6 @@ void ACookiePlayerController::ClientPostLogin_Implementation(const FString& NewP
 	if (GEngine)
 	{
 		const FString ConnectionMessage = FString::Printf(TEXT("%s (%s) connected"), *NewPlayerName, *RoleText);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, ConnectionMessage);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, ConnectionMessage);
 	}
 }

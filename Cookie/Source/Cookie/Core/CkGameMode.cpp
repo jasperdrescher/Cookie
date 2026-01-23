@@ -21,7 +21,7 @@ void ACkGameMode::PostLogin(APlayerController* NewPlayer)
 	if (GEngine)
 	{
 		const FString ConnectionMessage = FString::Printf(TEXT("%s (%s) connected"), *NewPlayerName, *RoleText);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, ConnectionMessage);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, ConnectionMessage);
 	}
 
 	if (ACookiePlayerController* NewPlayerController = Cast<ACookiePlayerController>(NewPlayer))
