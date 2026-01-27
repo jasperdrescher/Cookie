@@ -5,10 +5,22 @@
 #include "Engine/LocalPlayer.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "Player/CkTextChatComponent.h"
 
 void ACookiePlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (TextChatComponentClass && !TextChatComponent)
+	{
+		TextChatComponent = NewObject<UCkTextChatComponent>(this, TextChatComponentClass);
+
+		if (TextChatComponent)
+		{
+			AddInstanceComponent(TextChatComponent);
+			TextChatComponent->RegisterComponent();
+		}
+	}
 }
 
 void ACookiePlayerController::SetupInputComponent()

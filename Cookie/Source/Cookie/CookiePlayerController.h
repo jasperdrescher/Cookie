@@ -9,6 +9,7 @@
 
 class UInputMappingContext;
 class UUserWidget;
+class UCkTextChatComponent;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -22,7 +23,13 @@ class ACookiePlayerController : public APlayerController
 public:
 	UFUNCTION(Client, Reliable)
 	void ClientPostLogin(const FString& NewPlayerName, const FString& RoleText);
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
+	TSubclassOf<UCkTextChatComponent> TextChatComponentClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UCkTextChatComponent* TextChatComponent = nullptr;
+
 protected:
 
 	/** Input Mapping Contexts */
