@@ -297,24 +297,6 @@
 			"Enabled": false
 		},
 		{
-			"Name": "Interchange",
-			"Enabled": false,
-			"SupportedTargetPlatforms": [
-				"Win64",
-				"Linux",
-				"Mac"
-			]
-		},
-		{
-			"Name": "InterchangeEditor",
-			"Enabled": false,
-			"SupportedTargetPlatforms": [
-				"Win64",
-				"Linux",
-				"Mac"
-			]
-		},
-		{
 			"Name": "InterchangeAssets",
 			"Enabled": false
 		},
