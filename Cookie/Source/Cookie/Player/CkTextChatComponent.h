@@ -23,14 +23,14 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable)
-	void SendMessage(const FText& Message);
+	void SendMessage(const FString& Message);
 
 	UFUNCTION(Server, Reliable)
-	void Server_SendMessage(const FText& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId);
+	void Server_SendMessage(const FString& Message);
 
 	UFUNCTION(Client, Reliable)
-	void Client_RecieveMessage(const FText& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId);
+	void Client_ReceiveMessage(const FString& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId);
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void BP_ReceiveMessage(const FText& Message, const FString& SenderName, const FBPUniqueNetId& SenderUniqueNetId);
+	void BP_ReceiveMessage(const FString& Message, const FString& SenderName, const FBPUniqueNetId& SenderUniqueNetId);
 };

@@ -2,6 +2,7 @@
 
 #include "Player/CkTextChatComponent.h"
 
+#include "Cookie.h"
 #include "CookiePlayerController.h"
 #include "GameFramework/GameStateBase.h"
 #include "Kismet/GameplayStatics.h"
@@ -9,6 +10,9 @@
 UCkTextChatComponent::UCkTextChatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+
+	SetIsReplicatedByDefault(true);
+	SetNetAddressable();
 }
 
 void UCkTextChatComponent::BeginPlay()
@@ -21,30 +25,52 @@ void UCkTextChatComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-void UCkTextChatComponent::SendMessage(const FText& Message)
+void UCkTextChatComponent::SendMessage(const FString& Message)
 {
-	const APlayerState* PlayerState = Cast<ACookiePlayerController>(GetOwner())->PlayerState;
-	const FString SenderName = PlayerState->GetPlayerName();
-	const FUniqueNetIdRepl SenderUniqueNetId = PlayerState->GetUniqueId();
-
-	Server_SendMessage(Message, SenderName, SenderUniqueNetId);
+	Server_SendMessage(Message);
 }
 
-void UCkTextChatComponent::Server_SendMessage_Implementation(const FText& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId)
+void UCkTextChatComponent::Server_SendMessage_Implementation(const FString& Message)
 {
-	AGameStateBase* GameState = Cast<AGameStateBase>(UGameplayStatics::GetGameState(GetWorld()));
-	const TArray<TObjectPtr<APlayerState>>& Players = GameState->PlayerArray;
-	for (int32 i = 0; i < Players.Num(); ++i)
+	const AActor* Owner = GetOwner();
+	const APlayerController* SenderPlayerController = Cast<APlayerController>(Owner);
+	if (!SenderPlayerController)
+		return;
+
+	const APlayerState* SenderPlayerState = SenderPlayerController->PlayerState;
+	if (!SenderPlayerState) 
+		return;
+
+	const FString SenderName = SenderPlayerState->GetPlayerName();
+	const FUniqueNetIdRepl& SenderUniqueId = SenderPlayerState->GetUniqueId();
+
+	if (!SenderUniqueId.IsValid())
 	{
-		ACookiePlayerController* PlayerController = Cast<ACookiePlayerController>(Players[i]->GetPlayerController());
-		if (PlayerController)
+		UE_LOG(LogCookie, Warning, TEXT("UniqueId not valid yet for %s (server)"), *SenderName);
+		return;
+	}
+
+	AGameStateBase* GameState = GetWorld()->GetGameState();
+	if (!GameState)
+		return;
+
+	for (APlayerState* ClientPlayerState : GameState->PlayerArray)
+	{
+		if (!ClientPlayerState)
+			continue;
+
+		APlayerController* ClientPlayerController = Cast<APlayerController>(ClientPlayerState->GetPlayerController());
+		if (!ClientPlayerController)
+			continue;
+
+		if (UCkTextChatComponent* ClientTextChatComponent = ClientPlayerController->FindComponentByClass<UCkTextChatComponent>())
 		{
-			PlayerController->TextChatComponent->Client_RecieveMessage_Implementation(Message, SenderName, SenderUniqueNetId);
+			ClientTextChatComponent->Client_ReceiveMessage(Message, SenderName, SenderUniqueId);
 		}
 	}
 }
 
-void UCkTextChatComponent::Client_RecieveMessage_Implementation(const FText& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId)
+void UCkTextChatComponent::Client_ReceiveMessage_Implementation(const FString& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId)
 {
 	FBPUniqueNetId SenderBPUniqueNetId;
 	SenderBPUniqueNetId.SetUniqueNetId(SenderUniqueNetId.GetUniqueNetId());
