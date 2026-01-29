@@ -8,6 +8,7 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
+#include "Player/CkTextChatComponent.h"
 
 void ACkGameMode::PostLogin(APlayerController* NewPlayer)
 {
@@ -27,6 +28,12 @@ void ACkGameMode::PostLogin(APlayerController* NewPlayer)
 	if (ACookiePlayerController* NewPlayerController = Cast<ACookiePlayerController>(NewPlayer))
 	{
 		NewPlayerController->ClientPostLogin(NewPlayerName, RoleText);
+
+		if (UCkTextChatComponent* ClientTextChatComponent = NewPlayerController->FindComponentByClass<UCkTextChatComponent>())
+		{
+			const FString ConnectionMessage = FString::Printf(TEXT("%s (%s) connected"), *NewPlayerName, *RoleText);
+			ClientTextChatComponent->SendAnnouncement(ConnectionMessage);
+		}
 	}
 
 	NewPlayerState->bIsHost = bIsHost;

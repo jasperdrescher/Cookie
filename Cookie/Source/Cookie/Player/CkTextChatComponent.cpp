@@ -30,6 +30,11 @@ void UCkTextChatComponent::SendMessage(const FString& Message)
 	Server_SendMessage(Message);
 }
 
+void UCkTextChatComponent::SendAnnouncement(const FString& Message)
+{
+	Server_SendAnnouncement(Message);
+}
+
 void UCkTextChatComponent::Server_SendMessage_Implementation(const FString& Message)
 {
 	const AActor* Owner = GetOwner();
@@ -42,6 +47,7 @@ void UCkTextChatComponent::Server_SendMessage_Implementation(const FString& Mess
 		return;
 
 	const FString SenderName = SenderPlayerState->GetPlayerName();
+
 	const FUniqueNetIdRepl& SenderUniqueId = SenderPlayerState->GetUniqueId();
 
 	if (!SenderUniqueId.IsValid())
@@ -70,9 +76,36 @@ void UCkTextChatComponent::Server_SendMessage_Implementation(const FString& Mess
 	}
 }
 
+void UCkTextChatComponent::Server_SendAnnouncement_Implementation(const FString& Message)
+{
+	AGameStateBase* GameState = GetWorld()->GetGameState();
+	if (!GameState)
+		return;
+
+	for (APlayerState* ClientPlayerState : GameState->PlayerArray)
+	{
+		if (!ClientPlayerState)
+			continue;
+
+		APlayerController* ClientPlayerController = Cast<APlayerController>(ClientPlayerState->GetPlayerController());
+		if (!ClientPlayerController)
+			continue;
+
+		if (UCkTextChatComponent* ClientTextChatComponent = ClientPlayerController->FindComponentByClass<UCkTextChatComponent>())
+		{
+			ClientTextChatComponent->Client_ReceiveAnnouncement(Message);
+		}
+	}
+}
+
 void UCkTextChatComponent::Client_ReceiveMessage_Implementation(const FString& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId)
 {
 	FBPUniqueNetId SenderBPUniqueNetId;
 	SenderBPUniqueNetId.SetUniqueNetId(SenderUniqueNetId.GetUniqueNetId());
 	BP_ReceiveMessage(Message, SenderName, SenderBPUniqueNetId);
+}
+
+void UCkTextChatComponent::Client_ReceiveAnnouncement_Implementation(const FString& Message)
+{
+	BP_ReceiveAnnouncement(Message);
 }

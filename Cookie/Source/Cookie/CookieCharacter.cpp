@@ -331,7 +331,7 @@ void ACookieCharacter::Server_RefreshNameTag_Implementation()
 	const ACkGamePlayerState* NameTagPlayerState = Cast<ACkGamePlayerState>(GetPlayerState());
 	if (NameTagWidget && NameTagPlayerState)
 	{
-		const FString RoleText = NameTagPlayerState->bIsHost ? "-Host" : "-Client";
+		const FString RoleText = NameTagPlayerState->bIsHost ? " (Host)" : " (Client)";
 		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName() + RoleText));
 
 		/*const FLinearColor TeamColor = GetTeamColorFromPS(NameTagPlayerState);

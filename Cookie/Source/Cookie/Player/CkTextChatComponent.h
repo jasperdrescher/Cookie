@@ -25,12 +25,24 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SendMessage(const FString& Message);
 
+	UFUNCTION(BlueprintCallable)
+	void SendAnnouncement(const FString& Message);
+
 	UFUNCTION(Server, Reliable)
 	void Server_SendMessage(const FString& Message);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SendAnnouncement(const FString& Message);
 
 	UFUNCTION(Client, Reliable)
 	void Client_ReceiveMessage(const FString& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId);
 
+	UFUNCTION(Client, Reliable)
+	void Client_ReceiveAnnouncement(const FString& Message);
+
 	UFUNCTION(BlueprintImplementableEvent)
 	void BP_ReceiveMessage(const FString& Message, const FString& SenderName, const FBPUniqueNetId& SenderUniqueNetId);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void BP_ReceiveAnnouncement(const FString& Message);
 };
