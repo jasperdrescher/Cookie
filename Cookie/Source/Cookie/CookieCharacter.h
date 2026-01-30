@@ -75,6 +75,9 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_RefreshNameTag();
 
+	UFUNCTION(Server, Reliable)
+	void Server_ApplyPlayerColorToMesh(const FColor& PlayerColor);
+
 	virtual void BeginPlay() override;
 
 	virtual void OnRep_PlayerState() override;
@@ -125,6 +128,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Cookies")
 	void SetCookies(int CookiesValue);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void BP_ApplyPlayerColorToMesh(const FColor& PlayerColor);
 
 protected:
 	/** Initialize input action bindings */

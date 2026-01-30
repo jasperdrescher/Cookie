@@ -93,6 +93,12 @@ void ACookieCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (const APlayerState* PlayerStateBase = GetPlayerState())
+	{
+		const ACkGamePlayerState* GamePlayerState = Cast<ACkGamePlayerState>(PlayerStateBase);
+		BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
+	}
+
 	RefreshNameTag();
 }
 
@@ -286,9 +292,16 @@ void ACookieCharacter::MulticastPickupCookie_Implementation(const FVector_NetQua
 void ACookieCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
+
+	const APlayerState* PlayerStateBase = GetPlayerState();
+	const ACkGamePlayerState* GamePlayerState = Cast<ACkGamePlayerState>(PlayerStateBase);
+
 	RefreshNameTag();
 
 	Server_RefreshNameTag();
+
+	BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
+	Server_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
 }
 
 void ACookieCharacter::RefreshNameTag()
@@ -304,11 +317,8 @@ void ACookieCharacter::RefreshNameTag()
 	const ACkGamePlayerState* NameTagPlayerState = Cast<ACkGamePlayerState>(GetPlayerState());
 	if (NameTagWidget && NameTagPlayerState)
 	{
-		const FString RoleText = NameTagPlayerState->bIsHost ? "-Host" : "-Client";
+		const FString RoleText = NameTagPlayerState->bIsHost ? " (Host)" : " (Client)";
 		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName() + RoleText));
-
-		/*const FLinearColor TeamColor = GetTeamColorFromPS(NameTagPlayerState);
-		NameTagWidget->SetNameColor(TeamColor);*/
 	}
 
 	const bool bIsLocalControlled = IsLocallyControlled();
@@ -333,9 +343,6 @@ void ACookieCharacter::Server_RefreshNameTag_Implementation()
 	{
 		const FString RoleText = NameTagPlayerState->bIsHost ? " (Host)" : " (Client)";
 		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName() + RoleText));
-
-		/*const FLinearColor TeamColor = GetTeamColorFromPS(NameTagPlayerState);
-		NameTagWidget->SetNameColor(TeamColor);*/
 	}
 
 	const bool bIsLocalControlled = IsLocallyControlled();
@@ -343,4 +350,9 @@ void ACookieCharacter::Server_RefreshNameTag_Implementation()
 	{
 		NameTagWidgetComponent->SetVisibility(!bIsLocalControlled);
 	}
+}
+
+void ACookieCharacter::Server_ApplyPlayerColorToMesh_Implementation(const FColor& PlayerColor)
+{
+	BP_ApplyPlayerColorToMesh(PlayerColor);
 }
