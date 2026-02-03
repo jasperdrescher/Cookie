@@ -14,6 +14,7 @@ class UCameraComponent;
 class UInputAction;
 class UWidgetComponent;
 class UCkNameTagWidget;
+class UCkCookieCounterWidget;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -47,14 +48,6 @@ protected:
 	/** Response to health being updated. Called on the server immediately after modification, and on clients in response to a RepNotify*/
 	void OnHealthUpdate();
 
-	UPROPERTY(ReplicatedUsing = OnRep_Cookies)
-	int Cookies;
-
-	UFUNCTION()
-	void OnRep_Cookies();
-
-	void OnCookiesUpdate();
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Audio")
 	USoundBase* CookiePickupSound = nullptr;
 
@@ -72,6 +65,9 @@ protected:
 
 	UCkNameTagWidget* NameTagWidget = nullptr;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	UWidgetComponent* CookieCounterWidgetComponent;
+
 	UFUNCTION(Server, Reliable)
 	void Server_RefreshNameTag();
 
@@ -79,7 +75,7 @@ protected:
 	void Server_ApplyPlayerColorToMesh(const FColor& PlayerColor);
 
 	virtual void BeginPlay() override;
-
+	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
 	void RefreshNameTag();
@@ -123,12 +119,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	float TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
-	UFUNCTION(BlueprintPure, Category = "Cookies")
-	FORCEINLINE int GetCookies() const { return Cookies; }
-
-	UFUNCTION(BlueprintCallable, Category = "Cookies")
-	void SetCookies(int CookiesValue);
-
 	UFUNCTION(BlueprintImplementableEvent)
 	void BP_ApplyPlayerColorToMesh(const FColor& PlayerColor);
 
@@ -166,4 +156,10 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+private:
+	void InitCookieCounterWidgetBinding();
+
+	UFUNCTION()
+	void HandleCookiesChanged(int32 NewCount);
 };

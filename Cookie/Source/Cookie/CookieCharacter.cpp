@@ -22,6 +22,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Sound/SoundBase.h"
 #include "UI/CkNameTagWidget.h"
+#include "UI/CkCookieCounterWidget.h"
 
 ACookieCharacter::ACookieCharacter()
 {
@@ -78,10 +79,14 @@ ACookieCharacter::ACookieCharacter()
 	NameTagWidgetComponent->SetReceivesDecals(false);
 	NameTagWidgetComponent->SetTwoSided(true);
 
+	CookieCounterWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("CookieCounter"));
+	CookieCounterWidgetComponent->SetupAttachment(GetMesh());
+	CookieCounterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	CookieCounterWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, 182.f));
+	CookieCounterWidgetComponent->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
+
 	MaxHealth = 100.0f;
 	CurrentHealth = MaxHealth;
-
-	Cookies = 0;
 
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -100,6 +105,8 @@ void ACookieCharacter::BeginPlay()
 	}
 
 	RefreshNameTag();
+
+	InitCookieCounterWidgetBinding();
 }
 
 void ACookieCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -189,7 +196,6 @@ void ACookieCharacter::GetLifetimeReplicatedProps(TArray <FLifetimeProperty>& Ou
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ACookieCharacter, CurrentHealth);
-	DOREPLIFETIME(ACookieCharacter, Cookies);
 }
 
 void ACookieCharacter::OnHealthUpdate()
@@ -234,35 +240,6 @@ float ACookieCharacter::TakeDamage(float DamageTaken, struct FDamageEvent const&
 	return damageApplied;
 }
 
-void ACookieCharacter::OnCookiesUpdate()
-{
-	if (IsLocallyControlled())
-	{
-		FString cookiesMessage = FString::Printf(TEXT("You now have %i cookies."), Cookies);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, cookiesMessage);
-	}
-
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		FString cookiesMessage = FString::Printf(TEXT("%s now has %i cookies."), *GetFName().ToString(), Cookies);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, cookiesMessage);
-	}
-}
-
-void ACookieCharacter::OnRep_Cookies()
-{
-	OnCookiesUpdate();
-}
-
-void ACookieCharacter::SetCookies(int CookiesValue)
-{
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		Cookies = FMath::Clamp(CookiesValue, 0, CookiesValue);
-		OnCookiesUpdate();
-	}
-}
-
 void ACookieCharacter::OnOverlapBegin(UPrimitiveComponent* /*OverlappedComp*/, AActor* OtherActor, UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/, bool /*bFromSweep*/, const FHitResult& /*SweepResult*/)
 {
 	if (!OtherActor || OtherActor == this)
@@ -276,7 +253,10 @@ void ACookieCharacter::OnOverlapBegin(UPrimitiveComponent* /*OverlappedComp*/, A
 			MulticastPickupCookie(actorLocation);
 			OtherActor->Destroy();
 
-			SetCookies(Cookies + 1);
+			if (ACkGamePlayerState* GamePlayerState = GetPlayerState<ACkGamePlayerState>())
+			{
+				GamePlayerState->AddCookie();
+			}
 		}
 	}
 }
@@ -289,9 +269,20 @@ void ACookieCharacter::MulticastPickupCookie_Implementation(const FVector_NetQua
 		Location);
 }
 
+void ACookieCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// Server-side initialization
+
+	InitCookieCounterWidgetBinding();
+}
+
 void ACookieCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
+
+	// Client-side initialization
 
 	const APlayerState* PlayerStateBase = GetPlayerState();
 	const ACkGamePlayerState* GamePlayerState = Cast<ACkGamePlayerState>(PlayerStateBase);
@@ -302,6 +293,8 @@ void ACookieCharacter::OnRep_PlayerState()
 
 	BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
 	Server_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
+
+	InitCookieCounterWidgetBinding();
 }
 
 void ACookieCharacter::RefreshNameTag()
@@ -355,4 +348,43 @@ void ACookieCharacter::Server_RefreshNameTag_Implementation()
 void ACookieCharacter::Server_ApplyPlayerColorToMesh_Implementation(const FColor& PlayerColor)
 {
 	BP_ApplyPlayerColorToMesh(PlayerColor);
+}
+
+void ACookieCharacter::InitCookieCounterWidgetBinding()
+{
+	if (!CookieCounterWidgetComponent)
+		return;
+
+	UUserWidget* UserWidget = CookieCounterWidgetComponent->GetUserWidgetObject();
+	UCkCookieCounterWidget* CookieCounterWidget = Cast<UCkCookieCounterWidget>(UserWidget);
+	if (!CookieCounterWidget)
+		return;
+
+	ACkGamePlayerState* GamePlayerState = GetPlayerState<ACkGamePlayerState>();
+	if (!GamePlayerState)
+		return;
+
+	GamePlayerState->OnCookiesChanged.RemoveAll(this);
+	GamePlayerState->OnCookiesChanged.AddDynamic(this, &ACookieCharacter::HandleCookiesChanged);
+
+	CookieCounterWidget->SetCookieCount(GamePlayerState->GetCookies());
+
+	const bool bIsLocalControlled = IsLocallyControlled();
+	CookieCounterWidgetComponent->SetVisibility(!bIsLocalControlled);
+}
+
+void ACookieCharacter::HandleCookiesChanged(int32 NewCount)
+{
+	if (!CookieCounterWidgetComponent)
+		return;
+
+	UUserWidget* UserWidget = CookieCounterWidgetComponent->GetUserWidgetObject();
+	UCkCookieCounterWidget* CookieCounterWidget = Cast<UCkCookieCounterWidget>(UserWidget);
+	if (!CookieCounterWidget)
+		return;
+
+	if (CookieCounterWidget)
+	{
+		CookieCounterWidget->SetCookieCount(NewCount);
+	}
 }
