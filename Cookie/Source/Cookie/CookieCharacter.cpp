@@ -23,6 +23,7 @@
 #include "Sound/SoundBase.h"
 #include "UI/CkNameTagWidget.h"
 #include "UI/CkCookieCounterWidget.h"
+#include "UI/CkGameHUD.h"
 
 ACookieCharacter::ACookieCharacter()
 {
@@ -371,6 +372,19 @@ void ACookieCharacter::InitCookieCounterWidgetBinding()
 
 	const bool bIsLocalControlled = IsLocallyControlled();
 	CookieCounterWidgetComponent->SetVisibility(!bIsLocalControlled);
+
+	if (bIsLocalControlled)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		if (PlayerController)
+		{
+			ACkGameHUD* GameHUD = Cast<ACkGameHUD>(PlayerController->GetHUD());
+			if (GameHUD)
+			{
+				GameHUD->SetCookieCount(GamePlayerState->GetCookies());
+			}
+		}
+	}
 }
 
 void ACookieCharacter::HandleCookiesChanged(int32 NewCount)
@@ -386,5 +400,15 @@ void ACookieCharacter::HandleCookiesChanged(int32 NewCount)
 	if (CookieCounterWidget)
 	{
 		CookieCounterWidget->SetCookieCount(NewCount);
+	}
+
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
+	{
+		ACkGameHUD* GameHUD = Cast<ACkGameHUD>(PlayerController->GetHUD());
+		if (GameHUD)
+		{
+			GameHUD->SetCookieCount(NewCount);
+		}
 	}
 }
