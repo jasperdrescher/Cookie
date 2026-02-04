@@ -19,16 +19,8 @@ void ACkGameMode::PostLogin(APlayerController* NewPlayer)
 	const bool bIsHost = GetRoleForJoiningPlayer(NewPlayer);
 	const FString RoleText = bIsHost ? "Host" : "Client";
 
-	if (GEngine)
-	{
-		const FString ConnectionMessage = FString::Printf(TEXT("%s (%s) connected"), *NewPlayerName, *RoleText);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, ConnectionMessage);
-	}
-
 	if (ACookiePlayerController* NewPlayerController = Cast<ACookiePlayerController>(NewPlayer))
 	{
-		NewPlayerController->ClientPostLogin(NewPlayerName, RoleText);
-
 		if (UCkTextChatComponent* ClientTextChatComponent = NewPlayerController->FindComponentByClass<UCkTextChatComponent>())
 		{
 			const FString ConnectionMessage = FString::Printf(TEXT("%s (%s) connected"), *NewPlayerName, *RoleText);

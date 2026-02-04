@@ -21,9 +21,6 @@ class ACookiePlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(Client, Reliable)
-	void ClientPostLogin(const FString& NewPlayerName, const FString& RoleText);
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
 	TSubclassOf<UCkTextChatComponent> TextChatComponentClass;
 

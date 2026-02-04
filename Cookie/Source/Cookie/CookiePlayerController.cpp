@@ -40,15 +40,3 @@ void ACookiePlayerController::SetupInputComponent()
 		}
 	}
 }
-
-void ACookiePlayerController::ClientPostLogin_Implementation(const FString& NewPlayerName, const FString& RoleText)
-{
-	if (!IsLocalController())
-		return;
-	
-	if (GEngine)
-	{
-		const FString ConnectionMessage = FString::Printf(TEXT("%s (%s) connected"), *NewPlayerName, *RoleText);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, ConnectionMessage);
-	}
-}
