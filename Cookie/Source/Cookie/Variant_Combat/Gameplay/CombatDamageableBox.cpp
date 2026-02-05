@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-
 #include "CombatDamageableBox.h"
+
 #include "Components/StaticMeshComponent.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
@@ -9,23 +9,18 @@
 ACombatDamageableBox::ACombatDamageableBox()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
+	SetReplicateMovement(true);
 
-	// create the mesh
 	RootComponent = Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 
-	// set the collision properties
 	Mesh->SetCollisionProfileName(FName("BlockAllDynamic"));
-
-	// enable physics
 	Mesh->SetSimulatePhysics(true);
-
-	// disable navigation relevance so boxes don't affect NavMesh generation
 	Mesh->bNavigationRelevant = false;
 }
 
 void ACombatDamageableBox::RemoveFromLevel()
 {
-	// destroy this actor
 	Destroy();
 }
 
@@ -33,7 +28,6 @@ void ACombatDamageableBox::EndPlay(EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 
-	// clear the death timer
 	GetWorld()->GetTimerManager().ClearTimer(DeathTimer);
 }
 
@@ -70,14 +64,3 @@ void ACombatDamageableBox::HandleDeath()
 	// set up the death cleanup timer
 	GetWorld()->GetTimerManager().SetTimer(DeathTimer, this, &ACombatDamageableBox::RemoveFromLevel, DeathDelayTime);
 }
-
-void ACombatDamageableBox::ApplyHealing(float Healing, AActor* Healer)
-{
-	// stub
-}
-
-void ACombatDamageableBox::NotifyDanger(const FVector& DangerLocation, AActor* DangerSource)
-{
-	// stub
-}
-
