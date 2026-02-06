@@ -309,6 +309,9 @@ protected:
 	UFUNCTION(NetMulticast, Reliable, Category = "Combat")
 	void Multicast_PlayDamageReceivedEffect(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse);
 
+	UFUNCTION(Client, Reliable, Category = "Combat")
+	void Client_PlayDamageDealtEffect(float Damage, const FVector_NetQuantize& ImpactPoint);
+
 	/** Called from a delegate when the attack montage ends */
 	void AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 	

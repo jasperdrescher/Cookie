@@ -321,8 +321,7 @@ void ACombatCharacter::Server_DoAttackTrace_Implementation(FName DamageSourceBon
 				// pass the damage event to the actor
 				Damageable->ApplyDamage(MeleeDamage, this, CurrentHit.ImpactPoint, Impulse);
 
-				// call the BP handler to play effects, etc.
-				DealtDamage(MeleeDamage, CurrentHit.ImpactPoint);
+				Client_PlayDamageDealtEffect(MeleeDamage, CurrentHit.ImpactPoint);
 			}
 		}
 	}
@@ -396,6 +395,13 @@ void ACombatCharacter::Server_ApplyDamage_Implementation(float Damage, AActor* D
 void ACombatCharacter::Multicast_PlayDamageReceivedEffect_Implementation(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse)
 {
 	ReceivedDamage(Damage, DamageLocation, DamageImpulse.GetSafeNormal());
+
+	// TODO: Rename to BP_*
+}
+
+void ACombatCharacter::Client_PlayDamageDealtEffect_Implementation(float Damage, const FVector_NetQuantize& ImpactPoint)
+{
+	DealtDamage(Damage, ImpactPoint);
 
 	// TODO: Rename to BP_*
 }
