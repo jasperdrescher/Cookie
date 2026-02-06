@@ -281,6 +281,12 @@ public:
 
 private:
 	UFUNCTION(Server, Reliable, Category = "Combat")
+	void Server_DoComboAttackStart();
+
+	UFUNCTION(Server, Reliable, Category = "Combat")
+	void Server_CheckComboAttack();
+
+	UFUNCTION(Server, Reliable, Category = "Combat")
 	void Server_DoChargedAttackStart();
 
 	UFUNCTION(Server, Reliable, Category = "Combat")
@@ -295,7 +301,8 @@ protected:
 	void ResetHP();
 
 	/** Performs a combo attack */
-	void ComboAttack();
+	UFUNCTION(Server, Reliable, Category = "Combat")
+	void Server_ComboAttack();
 
 	/** Performs a charged attack */
 	UFUNCTION(Server, Reliable, Category = "Combat")
@@ -359,9 +366,6 @@ protected:
 	/** Blueprint handler to play damage received effects */
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
 	void ReceivedDamage(float Damage, const FVector& ImpactPoint, const FVector& DamageDirection);
-
-	UFUNCTION(Server, Reliable)
-	void Server_ComboAttack();
 
 	UFUNCTION()
 	void OnRep_PlayMontageInfo();

@@ -130,17 +130,19 @@ void ACombatCharacter::DoLook(float Yaw, float Pitch)
 
 void ACombatCharacter::DoComboAttackStart()
 {
-	// are we already playing an attack animation?
+	Server_DoComboAttackStart();
+}
+
+void ACombatCharacter::Server_DoComboAttackStart_Implementation()
+{
 	if (bIsAttacking)
 	{
-		// cache the input time so we can check it later
+		// Cache the input time so we can check it later
 		CachedAttackInputTime = GetWorld()->GetTimeSeconds();
-
 		return;
 	}
 
-	// perform a combo attack
-	ComboAttack();
+	Server_ComboAttack();
 }
 
 void ACombatCharacter::DoComboAttackEnd()
@@ -221,6 +223,35 @@ void ACombatCharacter::Server_CheckChargedAttack_Implementation()
 	}
 }
 
+void ACombatCharacter::Server_CheckComboAttack_Implementation()
+{
+	if (bIsAttacking && !bIsChargingAttack)
+	{
+		// is the last attack input not stale?
+		if (GetWorld()->GetTimeSeconds() - CachedAttackInputTime <= ComboInputCacheTimeTolerance)
+		{
+			CachedAttackInputTime = 0.f;
+
+			++ComboCount;
+
+			// do we still have a combo section to play?
+			if (ComboCount < ComboSectionNames.Num())
+			{
+				// notify enemies they are about to be attacked
+				NotifyEnemiesOfIncomingAttack();
+
+				// jump to the next combo section
+				if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+				{
+					MontageSectionName = ComboSectionNames[ComboCount];
+
+					AnimInstance->Montage_JumpToSection(MontageSectionName, ComboAttackMontage);
+				}
+			}
+		}
+	}
+}
+
 void ACombatCharacter::ResetHP()
 {
 	// reset the current HP total
@@ -230,65 +261,46 @@ void ACombatCharacter::ResetHP()
 	LifeBarWidget->SetLifePercentage(1.0f);
 }
 
-void ACombatCharacter::ComboAttack()
+void ACombatCharacter::Server_ComboAttack_Implementation()
 {
-	if (!HasAuthority())
+	bIsAttacking = true;
+
+	ComboCount = 0;
+
+	NotifyEnemiesOfIncomingAttack();
+
+	if (!ComboAttackMontage)
 	{
-		if (ComboAttackMontage && IsLocallyControlled())
-		{
-			PlayAnimMontage(ComboAttackMontage, 1.f);
-		}
-
-		Server_ComboAttack();
-
+		UE_LOG(LogCookie, Warning, TEXT("Missing ComboAttackMontage"));
 		return;
 	}
 
-	// raise the attacking flag
-	bIsAttacking = true;
+	Server_PlayAnimMontage(ComboAttackMontage);
 
-	// reset the combo count
-	ComboCount = 0;
-
-	// notify enemies they are about to be attacked
-	NotifyEnemiesOfIncomingAttack();
-
-	if (ComboAttackMontage)
+	const float MontageLength = PlayAnimMontage(PlayMontageInfo.Montage, PlayMontageInfo.PlayRate, PlayMontageInfo.StartSectionName);
+	if (MontageLength > 0.f)
 	{
-		const float MontageLength = PlayAnimMontage(ComboAttackMontage, 1.f);
-		if (MontageLength > 0.f)
+		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
 		{
-			if (UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
-			{
-				AnimInst->Montage_SetEndDelegate(OnAttackMontageEnded, ComboAttackMontage);
-			}
+			AnimInst->Montage_SetEndDelegate(OnAttackMontageEnded, ComboAttackMontage);
 		}
 	}
-}
-
-void ACombatCharacter::Server_ComboAttack_Implementation()
-{
-	ComboAttack();
 }
 
 void ACombatCharacter::AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	// reset the attacking flag
 	bIsAttacking = false;
 
-	// check if we have a non-stale cached input
+	// Check if we have a non-stale cached input
 	if (GetWorld()->GetTimeSeconds() - CachedAttackInputTime <= AttackInputCacheTimeTolerance)
 	{
-		// are we holding the charged attack button?
 		if (bIsChargingAttack)
 		{
-			// do a charged attack
 			Server_ChargedAttack();
 		}
 		else
 		{
-			// do a regular attack
-			ComboAttack();
+			Server_ComboAttack();
 		}
 	}
 }
@@ -340,32 +352,7 @@ void ACombatCharacter::DoAttackTrace(FName DamageSourceBone)
 
 void ACombatCharacter::CheckCombo()
 {
-	// are we playing a non-charge attack animation?
-	if (bIsAttacking && !bIsChargingAttack)
-	{
-		// is the last attack input not stale?
-		if (GetWorld()->GetTimeSeconds() - CachedAttackInputTime <= ComboInputCacheTimeTolerance)
-		{
-			// consume the attack input so we don't accidentally trigger it twice
-			CachedAttackInputTime = 0.0f;
-
-			// increase the combo counter
-			++ComboCount;
-
-			// do we still have a combo section to play?
-			if (ComboCount < ComboSectionNames.Num())
-			{
-				// notify enemies they are about to be attacked
-				NotifyEnemiesOfIncomingAttack();
-
-				// jump to the next combo section
-				if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-				{
-					AnimInstance->Montage_JumpToSection(ComboSectionNames[ComboCount], ComboAttackMontage);
-				}
-			}
-		}
-	}
+	Server_CheckComboAttack();
 }
 
 void ACombatCharacter::CheckChargedAttack()
