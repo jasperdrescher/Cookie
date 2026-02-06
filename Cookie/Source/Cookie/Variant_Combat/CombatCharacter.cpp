@@ -9,10 +9,13 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Cookie.h"
 #include "Engine/DamageEvents.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/GameStateBase.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 
@@ -147,26 +150,58 @@ void ACombatCharacter::DoComboAttackEnd()
 
 void ACombatCharacter::DoChargedAttackStart()
 {
-	// raise the charging attack flag
+	Server_DoChargedAttackStart();
+}
+
+void ACombatCharacter::Server_DoChargedAttackStart_Implementation()
+{
 	bIsChargingAttack = true;
 
 	if (bIsAttacking)
 	{
-		// cache the input time so we can check it later
+		// Cache the input time so we can check it later
 		CachedAttackInputTime = GetWorld()->GetTimeSeconds();
-
 		return;
 	}
 
-	ChargedAttack();
+	Server_ChargedAttack();
+}
+
+void ACombatCharacter::Server_ChargedAttack_Implementation()
+{
+	bIsAttacking = true;
+
+	bHasLoopedChargedAttack = false;
+
+	NotifyEnemiesOfIncomingAttack();
+
+	if (!ChargedAttackMontage)
+	{
+		UE_LOG(LogCookie, Warning, TEXT("Missing ChargedAttackMontage"));
+		return;
+	}
+
+	Server_PlayAnimMontage(ChargedAttackMontage);
+	
+	const float MontageLength = PlayAnimMontage(PlayMontageInfo.Montage, PlayMontageInfo.PlayRate, PlayMontageInfo.StartSectionName);
+	if (MontageLength > 0.f)
+	{
+		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+		{
+			AnimInst->Montage_SetEndDelegate(OnAttackMontageEnded, ChargedAttackMontage);
+		}
+	}
 }
 
 void ACombatCharacter::DoChargedAttackEnd()
 {
-	// lower the charging attack flag
+	Server_DoChargedAttackEnd();
+}
+
+void ACombatCharacter::Server_DoChargedAttackEnd_Implementation()
+{
 	bIsChargingAttack = false;
 
-	// if we've done the charge loop at least once, release the charged attack right away
 	if (bHasLoopedChargedAttack)
 	{
 		CheckChargedAttack();
@@ -223,47 +258,6 @@ void ACombatCharacter::ServerComboAttack_Implementation()
 	ComboAttack();
 }
 
-void ACombatCharacter::ChargedAttack()
-{
-	if (!HasAuthority())
-	{
-		if (ChargedAttackMontage && IsLocallyControlled())
-		{
-			PlayAnimMontage(ChargedAttackMontage, 1.f);
-		}
-
-		ServerChargedAttack();
-
-		return;
-	}
-
-	// raise the attacking flag
-	bIsAttacking = true;
-
-	// reset the charge loop flag
-	bHasLoopedChargedAttack = false;
-
-	// notify enemies they are about to be attacked
-	NotifyEnemiesOfIncomingAttack();
-
-	if (ChargedAttackMontage)
-	{
-		const float MontageLength = PlayAnimMontage(ChargedAttackMontage, 1.f);
-		if (MontageLength > 0.f)
-		{
-			if (UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
-			{
-				AnimInst->Montage_SetEndDelegate(OnAttackMontageEnded, ChargedAttackMontage);
-			}
-		}
-	}
-}
-
-void ACombatCharacter::ServerChargedAttack_Implementation()
-{
-	ChargedAttack();
-}
-
 void ACombatCharacter::AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	// reset the attacking flag
@@ -276,7 +270,7 @@ void ACombatCharacter::AttackMontageEnded(UAnimMontage* Montage, bool bInterrupt
 		if (bIsChargingAttack)
 		{
 			// do a charged attack
-			ChargedAttack();
+			Server_ChargedAttack();
 		}
 		else
 		{
@@ -513,6 +507,75 @@ void ACombatCharacter::Landed(const FHitResult& Hit)
 	}
 }
 
+void ACombatCharacter::Server_PlayAnimMontage_Implementation(UAnimMontage* AnimMontage,
+	float PlayRate,
+	FName StartSectionName)
+{
+	PlayMontageInfo.Montage = AnimMontage;
+	PlayMontageInfo.PlayRate = PlayRate;
+	PlayMontageInfo.StartSectionName = StartSectionName;
+	PlayMontageInfo.bRequestStop = false;
+
+	if (const AGameStateBase* GameStateBase = UGameplayStatics::GetGameState(this))
+	{
+		PlayMontageInfo.TimeRequested = GameStateBase->GetServerWorldTimeSeconds();
+	}
+}
+
+void ACombatCharacter::Server_StopAnimMontage_Implementation(UAnimMontage* AnimMontage)
+{
+	if (AnimMontage != PlayMontageInfo.Montage)
+		return;
+
+	PlayMontageInfo.bRequestStop = true;
+
+	StopAnimMontage(AnimMontage);
+}
+
+void ACombatCharacter::OnRep_PlayMontageInfo()
+{
+	if (IsValid(PlayMontageInfo.Montage))
+	{
+		if (PlayMontageInfo.bRequestStop)
+		{
+			StopAnimMontage(PlayMontageInfo.Montage);
+		}
+		else
+		{
+			// We want to advance the montage to account for lag and sync up the animations everywhere as best we can
+			// It's possible that because of extreme lag, or network relevancy meaning this is replicated long after
+			// it was requested, that we don't need to play this montage.
+
+			float PlayOffset = 0.f;
+			const float Duration = PlayMontageInfo.Montage->GetPlayLength() / PlayMontageInfo.PlayRate;
+			if (AGameStateBase* GameStateBase = UGameplayStatics::GetGameState(this))
+			{
+				PlayOffset = GameStateBase->GetServerWorldTimeSeconds() - PlayMontageInfo.TimeRequested;
+				if (PlayOffset >= Duration)
+				{
+					// Skip, this play was requested too long ago
+					return;
+				}
+			}
+
+			// We need to use the lower level play montage function so we have access to start time
+			if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+			{
+				if (UAnimInstance* AnimInstance = CharacterMesh->GetAnimInstance())
+				{
+					const float TimeLeft = AnimInstance->Montage_Play(PlayMontageInfo.Montage, PlayMontageInfo.PlayRate, EMontagePlayReturnType::Duration, PlayOffset);
+
+					// I think this possibly breaks the lag compensation, so maybe don't use this if you want good sync
+					if (TimeLeft > 0.f && PlayMontageInfo.StartSectionName != NAME_None)
+					{
+						AnimInstance->Montage_JumpToSection(PlayMontageInfo.StartSectionName, PlayMontageInfo.Montage);
+					}
+				}
+			}
+		}
+	}
+}
+
 void ACombatCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -590,4 +653,5 @@ void ACombatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ACombatCharacter, ComboCount);
 	DOREPLIFETIME(ACombatCharacter, bIsChargingAttack);
 	DOREPLIFETIME(ACombatCharacter, bHasLoopedChargedAttack);
+	DOREPLIFETIME(ACombatCharacter, PlayMontageInfo);
 }

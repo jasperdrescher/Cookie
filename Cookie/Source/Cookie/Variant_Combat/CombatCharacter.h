@@ -2,11 +2,12 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "Animation/AnimInstance.h"
 #include "CombatAttacker.h"
 #include "CombatDamageable.h"
-#include "Animation/AnimInstance.h"
+#include "CoreMinimal.h"
+#include "GameFramework/Character.h"
+
 #include "CombatCharacter.generated.h"
 
 class USpringArmComponent;
@@ -17,6 +18,28 @@ class UCombatLifeBar;
 class UWidgetComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCombatCharacter, Log, All);
+
+USTRUCT(BlueprintType)
+struct FCharacterPlayMontageInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite)
+	UAnimMontage* Montage = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
+	float PlayRate = 1.0f;
+
+	UPROPERTY(BlueprintReadWrite)
+	FName StartSectionName = NAME_None;
+
+	UPROPERTY(BlueprintReadWrite)
+	double TimeRequested = 0.f;
+
+	/// Used to stop the same montage playing; useful if not being replaced by another
+	UPROPERTY(BlueprintReadWrite)
+	bool bRequestStop = false;
+};
 
 /**
  *  An enhanced Third Person Character with melee combat capabilities:
@@ -189,6 +212,9 @@ protected:
 	/** Copy of the mesh's transform so we can reset it after ragdoll animations */
 	FTransform MeshStartingTransform;
 
+	UPROPERTY(ReplicatedUsing = OnRep_PlayMontageInfo)
+	FCharacterPlayMontageInfo PlayMontageInfo;
+
 public:
 	
 	/** Constructor */
@@ -244,6 +270,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoChargedAttackEnd();
 
+	UFUNCTION(Server, Unreliable)
+	void Server_PlayAnimMontage(UAnimMontage* AnimMontage, float PlayRate = 1.f, FName StartSectionName = NAME_None);
+
+	UFUNCTION(Server, Unreliable)
+	void Server_StopAnimMontage(UAnimMontage* AnimMontage);
+
+private:
+	UFUNCTION(Server, Reliable, Category = "Combat")
+	void Server_DoChargedAttackStart();
+
+	UFUNCTION(Server, Reliable, Category = "Combat")
+	void Server_DoChargedAttackEnd();
+
 protected:
 
 	/** Resets the character's current HP to maximum */
@@ -253,7 +292,8 @@ protected:
 	void ComboAttack();
 
 	/** Performs a charged attack */
-	void ChargedAttack();
+	UFUNCTION(Server, Reliable, Category = "Combat")
+	void Server_ChargedAttack();
 
 	/** Called from a delegate when the attack montage ends */
 	void AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
@@ -315,10 +355,10 @@ protected:
 	void ReceivedDamage(float Damage, const FVector& ImpactPoint, const FVector& DamageDirection);
 
 	UFUNCTION(Server, Reliable)
-	void ServerChargedAttack();
-
-	UFUNCTION(Server, Reliable)
 	void ServerComboAttack();
+
+	UFUNCTION()
+	void OnRep_PlayMontageInfo();
 
 protected:
 
