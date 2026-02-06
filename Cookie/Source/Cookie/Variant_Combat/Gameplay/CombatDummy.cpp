@@ -27,9 +27,17 @@ ACombatDummy::ACombatDummy()
 	PhysicsConstraint->SetConstrainedComponents(BasePlate, NAME_None, Dummy, NAME_None);
 }
 
-void ACombatDummy::ApplyDamage(float Damage, AActor* DamageCauser, const FVector& DamageLocation, const FVector& DamageImpulse)
+void ACombatDummy::ApplyDamage(float /*Damage*/, AActor* /*DamageCauser*/, const FVector& DamageLocation, const FVector& DamageImpulse)
 {
+	if (!HasAuthority())
+		return;
+
 	Dummy->AddImpulseAtLocation(DamageImpulse, DamageLocation);
 
+	Multicast_ApplyDamage(DamageImpulse, DamageLocation);
+}
+
+void ACombatDummy::Multicast_ApplyDamage_Implementation(const FVector_NetQuantize& DamageImpulse, const FVector_NetQuantize& DamageLocation)
+{
 	BP_OnDummyDamaged(DamageLocation, DamageImpulse.GetSafeNormal());
 }

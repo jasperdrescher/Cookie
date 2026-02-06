@@ -38,5 +38,8 @@ public:
 
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat", meta = (DisplayName = "On Dummy Damaged"))
-	void BP_OnDummyDamaged(const FVector& Location, const FVector& Direction);
+	void BP_OnDummyDamaged(const FVector_NetQuantize& Location, const FVector_NetQuantize& Direction);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Combat")
+	void Multicast_ApplyDamage(const FVector_NetQuantize& DamageImpulse, const FVector_NetQuantize& DamageLocation);
 };
