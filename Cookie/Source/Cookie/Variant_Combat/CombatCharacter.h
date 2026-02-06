@@ -215,6 +215,9 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_PlayMontageInfo)
 	FCharacterPlayMontageInfo PlayMontageInfo;
 
+	UPROPERTY(ReplicatedUsing = OnRep_MontageSectionName)
+	FName MontageSectionName;
+
 public:
 	
 	/** Constructor */
@@ -282,6 +285,9 @@ private:
 
 	UFUNCTION(Server, Reliable, Category = "Combat")
 	void Server_DoChargedAttackEnd();
+
+	UFUNCTION(Server, Reliable, Category = "Combat")
+	void Server_CheckChargedAttack();
 
 protected:
 
@@ -355,10 +361,13 @@ protected:
 	void ReceivedDamage(float Damage, const FVector& ImpactPoint, const FVector& DamageDirection);
 
 	UFUNCTION(Server, Reliable)
-	void ServerComboAttack();
+	void Server_ComboAttack();
 
 	UFUNCTION()
 	void OnRep_PlayMontageInfo();
+
+	UFUNCTION()
+	void OnRep_MontageSectionName();
 
 protected:
 

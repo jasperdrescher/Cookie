@@ -204,7 +204,20 @@ void ACombatCharacter::Server_DoChargedAttackEnd_Implementation()
 
 	if (bHasLoopedChargedAttack)
 	{
-		CheckChargedAttack();
+		Server_CheckChargedAttack();
+	}
+}
+
+void ACombatCharacter::Server_CheckChargedAttack_Implementation()
+{
+	bHasLoopedChargedAttack = true;
+
+	// Jump to either the loop or the attack section depending on whether we're still holding the charge button
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		MontageSectionName = bIsChargingAttack ? ChargeLoopSection : ChargeAttackSection;
+
+		AnimInstance->Montage_JumpToSection(MontageSectionName, ChargedAttackMontage);
 	}
 }
 
@@ -226,7 +239,7 @@ void ACombatCharacter::ComboAttack()
 			PlayAnimMontage(ComboAttackMontage, 1.f);
 		}
 
-		ServerComboAttack();
+		Server_ComboAttack();
 
 		return;
 	}
@@ -253,7 +266,7 @@ void ACombatCharacter::ComboAttack()
 	}
 }
 
-void ACombatCharacter::ServerComboAttack_Implementation()
+void ACombatCharacter::Server_ComboAttack_Implementation()
 {
 	ComboAttack();
 }
@@ -357,14 +370,7 @@ void ACombatCharacter::CheckCombo()
 
 void ACombatCharacter::CheckChargedAttack()
 {
-	// raise the looped charged attack flag
-	bHasLoopedChargedAttack = true;
-
-	// jump to either the loop or the attack section depending on whether we're still holding the charge button
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		AnimInstance->Montage_JumpToSection(bIsChargingAttack ? ChargeLoopSection : ChargeAttackSection, ChargedAttackMontage);
-	}
+	Server_CheckChargedAttack();
 }
 
 void ACombatCharacter::NotifyEnemiesOfIncomingAttack()
@@ -534,45 +540,56 @@ void ACombatCharacter::Server_StopAnimMontage_Implementation(UAnimMontage* AnimM
 
 void ACombatCharacter::OnRep_PlayMontageInfo()
 {
-	if (IsValid(PlayMontageInfo.Montage))
+	if (!IsValid(PlayMontageInfo.Montage))
+		return;
+
+	if (PlayMontageInfo.bRequestStop)
 	{
-		if (PlayMontageInfo.bRequestStop)
-		{
-			StopAnimMontage(PlayMontageInfo.Montage);
-		}
-		else
-		{
-			// We want to advance the montage to account for lag and sync up the animations everywhere as best we can
-			// It's possible that because of extreme lag, or network relevancy meaning this is replicated long after
-			// it was requested, that we don't need to play this montage.
+		StopAnimMontage(PlayMontageInfo.Montage);
+	}
+	else
+	{
+		// We want to advance the montage to account for lag and sync up the animations everywhere as best we can
+		// It's possible that because of extreme lag, or network relevancy meaning this is replicated long after
+		// it was requested, that we don't need to play this montage.
 
-			float PlayOffset = 0.f;
-			const float Duration = PlayMontageInfo.Montage->GetPlayLength() / PlayMontageInfo.PlayRate;
-			if (AGameStateBase* GameStateBase = UGameplayStatics::GetGameState(this))
+		float PlayOffset = 0.f;
+		const float Duration = PlayMontageInfo.Montage->GetPlayLength() / PlayMontageInfo.PlayRate;
+		if (AGameStateBase* GameStateBase = UGameplayStatics::GetGameState(this))
+		{
+			PlayOffset = GameStateBase->GetServerWorldTimeSeconds() - PlayMontageInfo.TimeRequested;
+			if (PlayOffset >= Duration)
 			{
-				PlayOffset = GameStateBase->GetServerWorldTimeSeconds() - PlayMontageInfo.TimeRequested;
-				if (PlayOffset >= Duration)
-				{
-					// Skip, this play was requested too long ago
-					return;
-				}
+				// Skip, this play was requested too long ago
+				return;
 			}
+		}
 
-			// We need to use the lower level play montage function so we have access to start time
-			if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+		// We need to use the lower level play montage function so we have access to start time
+		if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+		{
+			if (UAnimInstance* AnimInstance = CharacterMesh->GetAnimInstance())
 			{
-				if (UAnimInstance* AnimInstance = CharacterMesh->GetAnimInstance())
-				{
-					const float TimeLeft = AnimInstance->Montage_Play(PlayMontageInfo.Montage, PlayMontageInfo.PlayRate, EMontagePlayReturnType::Duration, PlayOffset);
+				const float TimeLeft = AnimInstance->Montage_Play(PlayMontageInfo.Montage, PlayMontageInfo.PlayRate, EMontagePlayReturnType::Duration, PlayOffset);
 
-					// I think this possibly breaks the lag compensation, so maybe don't use this if you want good sync
-					if (TimeLeft > 0.f && PlayMontageInfo.StartSectionName != NAME_None)
-					{
-						AnimInstance->Montage_JumpToSection(PlayMontageInfo.StartSectionName, PlayMontageInfo.Montage);
-					}
+				// I think this possibly breaks the lag compensation, so maybe don't use this if you want good sync
+				if (TimeLeft > 0.f && PlayMontageInfo.StartSectionName != NAME_None)
+				{
+					AnimInstance->Montage_JumpToSection(PlayMontageInfo.StartSectionName, PlayMontageInfo.Montage);
 				}
 			}
 		}
+	}
+}
+
+void ACombatCharacter::OnRep_MontageSectionName()
+{
+	if (!IsValid(PlayMontageInfo.Montage))
+		return;
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->Montage_JumpToSection(MontageSectionName, PlayMontageInfo.Montage);
 	}
 }
 
@@ -654,4 +671,5 @@ void ACombatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ACombatCharacter, bIsChargingAttack);
 	DOREPLIFETIME(ACombatCharacter, bHasLoopedChargedAttack);
 	DOREPLIFETIME(ACombatCharacter, PlayMontageInfo);
+	DOREPLIFETIME(ACombatCharacter, MontageSectionName);
 }
