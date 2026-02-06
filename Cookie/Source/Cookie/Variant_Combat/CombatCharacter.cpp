@@ -254,11 +254,7 @@ void ACombatCharacter::Server_CheckComboAttack_Implementation()
 
 void ACombatCharacter::ResetHP()
 {
-	// reset the current HP total
 	CurrentHP = MaxHP;
-
-	// update the life bar
-	LifeBarWidget->SetLifePercentage(1.0f);
 }
 
 void ACombatCharacter::Server_ComboAttack_Implementation()
@@ -287,25 +283,7 @@ void ACombatCharacter::Server_ComboAttack_Implementation()
 	}
 }
 
-void ACombatCharacter::AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-	bIsAttacking = false;
-
-	// Check if we have a non-stale cached input
-	if (GetWorld()->GetTimeSeconds() - CachedAttackInputTime <= AttackInputCacheTimeTolerance)
-	{
-		if (bIsChargingAttack)
-		{
-			Server_ChargedAttack();
-		}
-		else
-		{
-			Server_ComboAttack();
-		}
-	}
-}
-
-void ACombatCharacter::DoAttackTrace(FName DamageSourceBone)
+void ACombatCharacter::Server_DoAttackTrace_Implementation(FName DamageSourceBone)
 {
 	// sweep for objects in front of the character to be hit by the attack
 	TArray<FHitResult> OutHits;
@@ -350,14 +328,76 @@ void ACombatCharacter::DoAttackTrace(FName DamageSourceBone)
 	}
 }
 
+void ACombatCharacter::AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	bIsAttacking = false;
+
+	// Check if we have a non-stale cached input
+	if (GetWorld()->GetTimeSeconds() - CachedAttackInputTime <= AttackInputCacheTimeTolerance)
+	{
+		if (bIsChargingAttack)
+		{
+			Server_ChargedAttack();
+		}
+		else
+		{
+			Server_ComboAttack();
+		}
+	}
+}
+
+void ACombatCharacter::DoAttackTrace(FName DamageSourceBone)
+{
+	if (!HasAuthority())
+		return; // We only need to get the anim notify from the player character on the server
+
+	Server_DoAttackTrace(DamageSourceBone);
+}
+
 void ACombatCharacter::CheckCombo()
 {
+	if (!HasAuthority())
+		return; // We only need to get the anim notify from the player character on the server
+
 	Server_CheckComboAttack();
 }
 
 void ACombatCharacter::CheckChargedAttack()
 {
+	if (!HasAuthority())
+		return; // We only need to get the anim notify from the player character on the server
+
 	Server_CheckChargedAttack();
+}
+
+void ACombatCharacter::Server_ApplyDamage_Implementation(float Damage, AActor* DamageCauser, const FVector& DamageLocation, const FVector& DamageImpulse)
+{
+	// pass the damage event to the actor
+	FDamageEvent DamageEvent;
+	const float ActualDamage = TakeDamage(Damage, DamageEvent, nullptr, DamageCauser);
+
+	// only process knockback and effects if we received nonzero damage
+	if (ActualDamage > 0.0f)
+	{
+		// apply the knockback impulse
+		GetCharacterMovement()->AddImpulse(DamageImpulse, true);
+
+		// is the character ragdolling?
+		if (GetMesh()->IsSimulatingPhysics())
+		{
+			// apply an impulse to the ragdoll
+			GetMesh()->AddImpulseAtLocation(DamageImpulse * GetMesh()->GetMass(), DamageLocation);
+		}
+
+		Multicast_PlayDamageEffect(ActualDamage, DamageLocation, DamageImpulse);
+	}
+}
+
+void ACombatCharacter::Multicast_PlayDamageEffect_Implementation(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse)
+{
+	ReceivedDamage(Damage, DamageLocation, DamageImpulse.GetSafeNormal());
+
+	// TODO: Rename to BP_*
 }
 
 void ACombatCharacter::NotifyEnemiesOfIncomingAttack()
@@ -400,27 +440,10 @@ void ACombatCharacter::NotifyEnemiesOfIncomingAttack()
 
 void ACombatCharacter::ApplyDamage(float Damage, AActor* DamageCauser, const FVector& DamageLocation, const FVector& DamageImpulse)
 {
-	// pass the damage event to the actor
-	FDamageEvent DamageEvent;
-	const float ActualDamage = TakeDamage(Damage, DamageEvent, nullptr, DamageCauser);
-
-	// only process knockback and effects if we received nonzero damage
-	if (ActualDamage > 0.0f)
-	{
-		// apply the knockback impulse
-		GetCharacterMovement()->AddImpulse(DamageImpulse, true);
-
-		// is the character ragdolling?
-		if (GetMesh()->IsSimulatingPhysics())
-		{
-			// apply an impulse to the ragdoll
-			GetMesh()->AddImpulseAtLocation(DamageImpulse * GetMesh()->GetMass(), DamageLocation);
-		}
-
-		// pass control to BP to play effects, etc.
-		ReceivedDamage(ActualDamage, DamageLocation, DamageImpulse.GetSafeNormal());
-	}
-
+	if (!HasAuthority())
+		return; // We only need to get the interface call from the player character on the server
+	
+	Server_ApplyDamage(Damage, DamageCauser, DamageLocation, DamageImpulse);
 }
 
 void ACombatCharacter::HandleDeath()
@@ -459,32 +482,31 @@ void ACombatCharacter::RespawnCharacter()
 
 float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	if (!HasAuthority())
+		return 0.f;
+
 	// only process damage if the character is still alive
-	if (CurrentHP <= 0.0f)
+	if (CurrentHP <= 0.f)
 	{
-		return 0.0f;
+		return 0.f;
 	}
 
 	// reduce the current HP
 	CurrentHP -= Damage;
 
 	// have we run out of HP?
-	if (CurrentHP <= 0.0f)
+	if (CurrentHP <= 0.f)
 	{
 		// die
 		HandleDeath();
 	}
 	else
 	{
-		// update the life bar
-		LifeBarWidget->SetLifePercentage(CurrentHP / MaxHP);
-
 		// enable partial ragdoll physics, but keep the pelvis vertical
 		GetMesh()->SetPhysicsBlendWeight(0.5f);
 		GetMesh()->SetBodySimulatePhysics(PelvisBoneName, false);
 	}
 
-	// return the received damage amount
 	return Damage;
 }
 
@@ -580,6 +602,14 @@ void ACombatCharacter::OnRep_MontageSectionName()
 	}
 }
 
+void ACombatCharacter::OnRep_CurrentHP()
+{
+	if (LifeBarWidget)
+	{
+		LifeBarWidget->SetLifePercentage(CurrentHP / MaxHP);
+	}
+}
+
 void ACombatCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -653,10 +683,12 @@ void ACombatCharacter::NotifyControllerChanged()
 void ACombatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
 	DOREPLIFETIME(ACombatCharacter, bIsAttacking);
 	DOREPLIFETIME(ACombatCharacter, ComboCount);
 	DOREPLIFETIME(ACombatCharacter, bIsChargingAttack);
 	DOREPLIFETIME(ACombatCharacter, bHasLoopedChargedAttack);
 	DOREPLIFETIME(ACombatCharacter, PlayMontageInfo);
 	DOREPLIFETIME(ACombatCharacter, MontageSectionName);
+	DOREPLIFETIME(ACombatCharacter, CurrentHP);
 }

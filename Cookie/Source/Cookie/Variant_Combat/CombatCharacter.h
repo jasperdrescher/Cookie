@@ -14,6 +14,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 struct FInputActionValue;
+struct FDamageEvent;
 class UCombatLifeBar;
 class UWidgetComponent;
 
@@ -28,7 +29,7 @@ struct FCharacterPlayMontageInfo
 	UAnimMontage* Montage = nullptr;
 
 	UPROPERTY(BlueprintReadWrite)
-	float PlayRate = 1.0f;
+	float PlayRate = 1.f;
 
 	UPROPERTY(BlueprintReadWrite)
 	FName StartSectionName = NAME_None;
@@ -41,14 +42,6 @@ struct FCharacterPlayMontageInfo
 	bool bRequestStop = false;
 };
 
-/**
- *  An enhanced Third Person Character with melee combat capabilities:
- *  - Combo attack string
- *  - Press and hold charged attack
- *  - Damage dealing and reaction
- *  - Death
- *  - Respawning
- */
 UCLASS(abstract)
 class ACombatCharacter : public ACharacter, public ICombatAttacker, public ICombatDamageable
 {
@@ -67,7 +60,6 @@ class ACombatCharacter : public ACharacter, public ICombatAttacker, public IComb
 	UWidgetComponent* LifeBar;
 	
 protected:
-
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* JumpAction;
@@ -98,11 +90,11 @@ protected:
 
 	/** Max amount of HP the character will have on respawn */
 	UPROPERTY(EditAnywhere, Category="Damage", meta = (ClampMin = 0, ClampMax = 100))
-	float MaxHP = 5.0f;
+	float MaxHP = 5.f;
 
 	/** Current amount of HP the character has */
-	UPROPERTY(VisibleAnywhere, Category="Damage")
-	float CurrentHP = 0.0f;
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentHP, VisibleAnywhere, Category="Damage")
+	float CurrentHP = 0.f;
 
 	/** Life bar widget fill color */
 	UPROPERTY(EditAnywhere, Category="Damage")
@@ -308,9 +300,17 @@ protected:
 	UFUNCTION(Server, Reliable, Category = "Combat")
 	void Server_ChargedAttack();
 
+	UFUNCTION(Server, Reliable, Category = "Combat")
+	void Server_DoAttackTrace(FName DamageSourceBone);
+
+	UFUNCTION(Server, Reliable, Category = "Combat")
+	void Server_ApplyDamage(float Damage, AActor* DamageCauser, const FVector& DamageLocation, const FVector& DamageImpulse);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Combat")
+	void Multicast_PlayDamageEffect(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse);
+
 	/** Called from a delegate when the attack montage ends */
 	void AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
 	
 public:
 
@@ -352,7 +352,7 @@ public:
 public:
 
 	/** Overrides the default TakeDamage functionality */
-	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+	virtual float TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	/** Overrides landing to reset damage ragdoll physics */
 	virtual void Landed(const FHitResult& Hit) override;
@@ -372,6 +372,9 @@ protected:
 
 	UFUNCTION()
 	void OnRep_MontageSectionName();
+
+	UFUNCTION()
+	void OnRep_CurrentHP();
 
 protected:
 
