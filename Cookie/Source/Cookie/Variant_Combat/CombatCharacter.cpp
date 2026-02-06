@@ -389,11 +389,11 @@ void ACombatCharacter::Server_ApplyDamage_Implementation(float Damage, AActor* D
 			GetMesh()->AddImpulseAtLocation(DamageImpulse * GetMesh()->GetMass(), DamageLocation);
 		}
 
-		Multicast_PlayDamageEffect(ActualDamage, DamageLocation, DamageImpulse);
+		Multicast_PlayDamageReceivedEffect(ActualDamage, DamageLocation, DamageImpulse);
 	}
 }
 
-void ACombatCharacter::Multicast_PlayDamageEffect_Implementation(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse)
+void ACombatCharacter::Multicast_PlayDamageReceivedEffect_Implementation(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse)
 {
 	ReceivedDamage(Damage, DamageLocation, DamageImpulse.GetSafeNormal());
 

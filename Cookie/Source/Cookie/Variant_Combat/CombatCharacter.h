@@ -307,7 +307,7 @@ protected:
 	void Server_ApplyDamage(float Damage, AActor* DamageCauser, const FVector& DamageLocation, const FVector& DamageImpulse);
 
 	UFUNCTION(NetMulticast, Reliable, Category = "Combat")
-	void Multicast_PlayDamageEffect(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse);
+	void Multicast_PlayDamageReceivedEffect(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse);
 
 	/** Called from a delegate when the attack montage ends */
 	void AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
