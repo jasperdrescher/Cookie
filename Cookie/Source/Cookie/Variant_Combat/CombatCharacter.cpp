@@ -232,7 +232,7 @@ void ACombatCharacter::ChargedAttack()
 			PlayAnimMontage(ChargedAttackMontage, 1.f);
 		}
 
-		ServerComboAttack();
+		ServerChargedAttack();
 
 		return;
 	}
