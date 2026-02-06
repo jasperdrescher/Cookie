@@ -4,11 +4,11 @@
 
 #include "Actors/CkCookiePickup.h"
 #include "Camera/CameraComponent.h"
-#include "Core/CkGamePlayerState.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Cookie.h"
+#include "Core/CkGamePlayerState.h"
 #include "Engine/LocalPlayer.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -21,12 +21,17 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Sound/SoundBase.h"
-#include "UI/CkNameTagWidget.h"
 #include "UI/CkCookieCounterWidget.h"
 #include "UI/CkGameHUD.h"
+#include "UI/CkNameTagWidget.h"
 
 ACookieCharacter::ACookieCharacter()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
+	bReplicates = true;
+	SetReplicateMovement(true);
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 		
@@ -89,10 +94,7 @@ ACookieCharacter::ACookieCharacter()
 	MaxHealth = 100.0f;
 	CurrentHealth = MaxHealth;
 
-	PrimaryActorTick.bCanEverTick = true;
-
-	bReplicates = true;
-	SetReplicateMovement(true);
+	Tags.Add(FName("Player"));
 }
 
 void ACookieCharacter::BeginPlay()
