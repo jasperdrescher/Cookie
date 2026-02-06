@@ -394,16 +394,12 @@ void ACombatCharacter::Server_ApplyDamage_Implementation(float Damage, AActor* D
 
 void ACombatCharacter::Multicast_PlayDamageReceivedEffect_Implementation(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse)
 {
-	ReceivedDamage(Damage, DamageLocation, DamageImpulse.GetSafeNormal());
-
-	// TODO: Rename to BP_*
+	BP_ReceivedDamage(Damage, DamageLocation, DamageImpulse.GetSafeNormal());
 }
 
 void ACombatCharacter::Client_PlayDamageDealtEffect_Implementation(float Damage, const FVector_NetQuantize& ImpactPoint)
 {
-	DealtDamage(Damage, ImpactPoint);
-
-	// TODO: Rename to BP_*
+	BP_DealtDamage(Damage, ImpactPoint);
 }
 
 void ACombatCharacter::NotifyEnemiesOfIncomingAttack()

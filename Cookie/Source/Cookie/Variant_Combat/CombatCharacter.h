@@ -362,13 +362,11 @@ public:
 
 protected:
 
-	/** Blueprint handler to play damage dealt effects */
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
-	void DealtDamage(float Damage, const FVector& ImpactPoint);
+	void BP_DealtDamage(float Damage, const FVector& ImpactPoint);
 
-	/** Blueprint handler to play damage received effects */
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
-	void ReceivedDamage(float Damage, const FVector& ImpactPoint, const FVector& DamageDirection);
+	void BP_ReceivedDamage(float Damage, const FVector& ImpactPoint, const FVector& DamageDirection);
 
 	UFUNCTION()
 	void OnRep_PlayMontageInfo();
