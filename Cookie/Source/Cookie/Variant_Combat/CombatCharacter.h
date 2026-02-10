@@ -380,6 +380,9 @@ protected:
 	UFUNCTION()
 	void OnRep_MaxHP();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_HandleDeath();
+
 private:
 	void UpdateLifeBar();
 

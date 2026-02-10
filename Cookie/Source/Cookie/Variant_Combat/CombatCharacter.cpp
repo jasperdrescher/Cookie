@@ -447,20 +447,12 @@ void ACombatCharacter::ApplyDamage(float Damage, AActor* DamageCauser, const FVe
 
 void ACombatCharacter::HandleDeath()
 {
-	// disable movement while we're dead
-	GetCharacterMovement()->DisableMovement();
+	if (!HasAuthority())
+		return;
 
-	// enable full ragdoll physics
-	GetMesh()->SetSimulatePhysics(true);
-
-	// hide the life bar
-	LifeBar->SetHiddenInGame(true);
-
-	// pull back the camera
-	GetCameraBoom()->TargetArmLength = DeathCameraDistance;
-
-	// schedule respawning
 	GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &ACombatCharacter::RespawnCharacter, RespawnTime, false);
+
+	Multicast_HandleDeath();
 }
 
 void ACombatCharacter::ApplyHealing(float Healing, AActor* Healer)
@@ -481,11 +473,12 @@ void ACombatCharacter::RespawnCharacter()
 
 float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	if (!HasAuthority())
+		return 0.f;
+	
 	// only process damage if the character is still alive
 	if (CurrentHP <= 0.f)
-	{
 		return 0.f;
-	}
 
 	// reduce the current HP
 	CurrentHP -= Damage;
@@ -494,10 +487,8 @@ float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dama
 
 	UpdateLifeBar();
 
-	// have we run out of HP?
 	if (CurrentHP == 0.f)
 	{
-		// die
 		HandleDeath();
 	}
 	else
@@ -614,6 +605,20 @@ void ACombatCharacter::OnRep_MaxHP()
 	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
 
 	UpdateLifeBar();
+}
+
+void ACombatCharacter::Multicast_HandleDeath_Implementation()
+{
+	GetCharacterMovement()->DisableMovement();
+
+	GetMesh()->SetSimulatePhysics(true);
+
+	LifeBar->SetHiddenInGame(true);
+
+	if (GetController() != nullptr && GetController()->IsLocalController())
+	{
+		GetCameraBoom()->TargetArmLength = DeathCameraDistance;
+	}
 }
 
 void ACombatCharacter::UpdateLifeBar()
