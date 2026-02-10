@@ -89,7 +89,7 @@ protected:
 	UInputAction* ToggleCameraAction;
 
 	/** Max amount of HP the character will have on respawn */
-	UPROPERTY(EditAnywhere, Category="Damage", meta = (ClampMin = 0, ClampMax = 100))
+	UPROPERTY(ReplicatedUsing = OnRep_MaxHP, EditAnywhere, Category="Damage", meta = (ClampMin = 0, ClampMax = 100))
 	float MaxHP = 5.f;
 
 	/** Current amount of HP the character has */
@@ -376,6 +376,12 @@ protected:
 
 	UFUNCTION()
 	void OnRep_CurrentHP();
+
+	UFUNCTION()
+	void OnRep_MaxHP();
+
+private:
+	void UpdateLifeBar();
 
 protected:
 

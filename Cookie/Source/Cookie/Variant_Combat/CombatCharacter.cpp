@@ -442,9 +442,6 @@ void ACombatCharacter::NotifyEnemiesOfIncomingAttack()
 
 void ACombatCharacter::ApplyDamage(float Damage, AActor* DamageCauser, const FVector& DamageLocation, const FVector& DamageImpulse)
 {
-	if (!HasAuthority())
-		return; // We only need to get the interface call from the player character on the server
-	
 	Server_ApplyDamage(Damage, DamageCauser, DamageLocation, DamageImpulse);
 }
 
@@ -484,9 +481,6 @@ void ACombatCharacter::RespawnCharacter()
 
 float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	if (!HasAuthority())
-		return 0.f;
-
 	// only process damage if the character is still alive
 	if (CurrentHP <= 0.f)
 	{
@@ -496,8 +490,12 @@ float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dama
 	// reduce the current HP
 	CurrentHP -= Damage;
 
+	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
+
+	UpdateLifeBar();
+
 	// have we run out of HP?
-	if (CurrentHP <= 0.f)
+	if (CurrentHP == 0.f)
 	{
 		// die
 		HandleDeath();
@@ -606,6 +604,20 @@ void ACombatCharacter::OnRep_MontageSectionName()
 
 void ACombatCharacter::OnRep_CurrentHP()
 {
+	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
+
+	UpdateLifeBar();
+}
+
+void ACombatCharacter::OnRep_MaxHP()
+{
+	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
+
+	UpdateLifeBar();
+}
+
+void ACombatCharacter::UpdateLifeBar()
+{
 	if (LifeBarWidget)
 	{
 		LifeBarWidget->SetLifePercentage(CurrentHP / MaxHP);
@@ -693,4 +705,5 @@ void ACombatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ACombatCharacter, PlayMontageInfo);
 	DOREPLIFETIME(ACombatCharacter, MontageSectionName);
 	DOREPLIFETIME(ACombatCharacter, CurrentHP);
+	DOREPLIFETIME(ACombatCharacter, MaxHP);
 }
