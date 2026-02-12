@@ -747,10 +747,12 @@ void ACombatCharacter::NotifyControllerChanged()
 {
 	Super::NotifyControllerChanged();
 
-	// update the respawn transform on the Player Controller
-	if (ACombatPlayerController* PC = Cast<ACombatPlayerController>(GetController()))
+	if (!HasAuthority())
+		return;
+
+	if (ACombatPlayerController* CombatPlayerController = Cast<ACombatPlayerController>(GetController()))
 	{
-		PC->SetRespawnTransform(GetActorTransform());
+		CombatPlayerController->SetRespawnTransform(GetActorTransform());
 	}
 }
 
@@ -763,11 +765,14 @@ void ACombatCharacter::OnRep_PlayerState()
 	const APlayerState* PlayerStateBase = GetPlayerState();
 	const ACkGamePlayerState* GamePlayerState = Cast<ACkGamePlayerState>(PlayerStateBase);
 
-	BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
-	Server_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
-
 	RefreshNameTag();
-	Server_RefreshNameTag();
+	BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
+
+	if (IsLocallyControlled())
+	{
+		Server_RefreshNameTag();
+		Server_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
+	}
 }
 
 void ACombatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

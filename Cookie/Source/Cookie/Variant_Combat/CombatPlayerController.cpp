@@ -33,7 +33,9 @@ void ACombatPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	// subscribe to the pawn's OnDestroyed delegate
+	if (!HasAuthority())
+		return;
+	
 	InPawn->OnDestroyed.AddDynamic(this, &ACombatPlayerController::OnPawnDestroyed);
 }
 
@@ -43,12 +45,10 @@ void ACombatPlayerController::SetRespawnTransform(const FTransform& NewRespawn)
 	RespawnTransform = NewRespawn;
 }
 
-void ACombatPlayerController::OnPawnDestroyed(AActor* DestroyedActor)
+void ACombatPlayerController::OnPawnDestroyed(AActor* /*DestroyedActor*/)
 {
-	// spawn a new character at the respawn transform
 	if (ACombatCharacter* RespawnedCharacter = GetWorld()->SpawnActor<ACombatCharacter>(CharacterClass, RespawnTransform))
 	{
-		// possess the character
 		Possess(RespawnedCharacter);
 	}
 }
