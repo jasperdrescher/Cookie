@@ -291,13 +291,15 @@ void ACookieCharacter::OnRep_PlayerState()
 	const ACkGamePlayerState* GamePlayerState = Cast<ACkGamePlayerState>(PlayerStateBase);
 
 	RefreshNameTag();
-
-	Server_RefreshNameTag();
-
 	BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
-	Server_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
 
 	InitCookieCounterWidgetBinding();
+
+	if (IsLocallyControlled())
+	{
+		Server_RefreshNameTag();
+		Server_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
+	}
 }
 
 void ACookieCharacter::RefreshNameTag()
