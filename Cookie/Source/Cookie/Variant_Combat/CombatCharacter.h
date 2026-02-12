@@ -239,6 +239,9 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
 	void BP_ToggleCamera();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void BP_ApplyPlayerColorToMesh(const FColor& PlayerColor);
+
 public:
 
 	/** Handles move inputs from either controls or UI interfaces */
@@ -383,6 +386,9 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_HandleDeath();
 
+	UFUNCTION(Server, Reliable)
+	void Server_ApplyPlayerColorToMesh(const FColor& PlayerColor);
+
 private:
 	void UpdateLifeBar();
 
@@ -399,6 +405,8 @@ protected:
 
 	/** Handles possessed initialization */
 	virtual void NotifyControllerChanged() override;
+
+	virtual void OnRep_PlayerState() override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 

@@ -10,6 +10,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Cookie.h"
+#include "Core/CkGamePlayerState.h"
 #include "Engine/DamageEvents.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -621,6 +622,11 @@ void ACombatCharacter::Multicast_HandleDeath_Implementation()
 	}
 }
 
+void ACombatCharacter::Server_ApplyPlayerColorToMesh_Implementation(const FColor& PlayerColor)
+{
+	BP_ApplyPlayerColorToMesh(PlayerColor);
+}
+
 void ACombatCharacter::UpdateLifeBar()
 {
 	if (LifeBarWidget)
@@ -648,6 +654,12 @@ void ACombatCharacter::BeginPlay()
 
 	// reset HP to maximum
 	ResetHP();
+
+	if (const APlayerState* PlayerStateBase = GetPlayerState())
+	{
+		const ACkGamePlayerState* GamePlayerState = Cast<ACkGamePlayerState>(PlayerStateBase);
+		BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
+	}
 }
 
 void ACombatCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -697,6 +709,19 @@ void ACombatCharacter::NotifyControllerChanged()
 	{
 		PC->SetRespawnTransform(GetActorTransform());
 	}
+}
+
+void ACombatCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	// Client-side initialization
+
+	const APlayerState* PlayerStateBase = GetPlayerState();
+	const ACkGamePlayerState* GamePlayerState = Cast<ACkGamePlayerState>(PlayerStateBase);
+
+	BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
+	Server_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
 }
 
 void ACombatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
