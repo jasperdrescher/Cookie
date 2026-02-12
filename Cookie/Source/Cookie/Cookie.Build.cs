@@ -26,7 +26,8 @@ public class Cookie : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"AdvancedSessions",
 			"AdvancedSteamSessions",
-			"Steamworks"
+			"Steamworks",
+			"CommonLoadingScreen"
 		});
 
 		PublicIncludePaths.AddRange(new string[] {
