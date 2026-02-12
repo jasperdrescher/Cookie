@@ -17,6 +17,7 @@ struct FInputActionValue;
 struct FDamageEvent;
 class UCombatLifeBar;
 class UWidgetComponent;
+class UCkNameTagWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCombatCharacter, Log, All);
 
@@ -204,6 +205,11 @@ protected:
 	/** Copy of the mesh's transform so we can reset it after ragdoll animations */
 	FTransform MeshStartingTransform;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	UWidgetComponent* NameTagWidgetComponent;
+
+	UCkNameTagWidget* NameTagWidget = nullptr;
+
 	UPROPERTY(ReplicatedUsing = OnRep_PlayMontageInfo)
 	FCharacterPlayMontageInfo PlayMontageInfo;
 
@@ -317,7 +323,9 @@ protected:
 
 	/** Called from a delegate when the attack montage ends */
 	void AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-	
+
+	void RefreshNameTag();
+
 public:
 
 	// ~begin CombatAttacker interface
@@ -388,6 +396,9 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void Server_ApplyPlayerColorToMesh(const FColor& PlayerColor);
+
+	UFUNCTION(Server, Reliable)
+	void Server_RefreshNameTag();
 
 private:
 	void UpdateLifeBar();

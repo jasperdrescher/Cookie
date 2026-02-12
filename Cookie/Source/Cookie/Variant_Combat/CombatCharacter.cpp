@@ -19,6 +19,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
+#include "UI/CkNameTagWidget.h"
 
 ACombatCharacter::ACombatCharacter()
 {
@@ -53,6 +54,17 @@ ACombatCharacter::ACombatCharacter()
 	// create the life bar widget component
 	LifeBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("LifeBar"));
 	LifeBar->SetupAttachment(RootComponent);
+
+	NameTagWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("Nameplate"));
+	NameTagWidgetComponent->SetupAttachment(GetMesh());
+	NameTagWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+	NameTagWidgetComponent->SetDrawSize(FVector2D(200.f, 40.f));
+	NameTagWidgetComponent->SetPivot(FVector2D(0.5f, 0.f));
+	NameTagWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, 110.f));
+	NameTagWidgetComponent->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
+	NameTagWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	NameTagWidgetComponent->SetReceivesDecals(false);
+	NameTagWidgetComponent->SetTwoSided(true);
 
 	// set the player tag
 	Tags.Add(FName("Player"));
@@ -635,6 +647,35 @@ void ACombatCharacter::UpdateLifeBar()
 	}
 }
 
+void ACombatCharacter::RefreshNameTag()
+{
+	if (!NameTagWidget)
+	{
+		if (UUserWidget* NameTagUserWidget = NameTagWidgetComponent->GetUserWidgetObject())
+		{
+			NameTagWidget = Cast<UCkNameTagWidget>(NameTagUserWidget);
+		}
+	}
+
+	const ACkGamePlayerState* NameTagPlayerState = Cast<ACkGamePlayerState>(GetPlayerState());
+	if (NameTagWidget && NameTagPlayerState)
+	{
+		const FString RoleText = NameTagPlayerState->bIsHost ? " (Host)" : " (Client)";
+		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName() + RoleText));
+	}
+
+	const bool bIsLocalControlled = IsLocallyControlled();
+	if (NameTagWidgetComponent)
+	{
+		NameTagWidgetComponent->SetVisibility(!bIsLocalControlled);
+	}
+}
+
+void ACombatCharacter::Server_RefreshNameTag_Implementation()
+{
+	RefreshNameTag();
+}
+
 void ACombatCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -660,6 +701,8 @@ void ACombatCharacter::BeginPlay()
 		const ACkGamePlayerState* GamePlayerState = Cast<ACkGamePlayerState>(PlayerStateBase);
 		BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
 	}
+
+	RefreshNameTag();
 }
 
 void ACombatCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -722,6 +765,9 @@ void ACombatCharacter::OnRep_PlayerState()
 
 	BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
 	Server_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
+
+	RefreshNameTag();
+	Server_RefreshNameTag();
 }
 
 void ACombatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

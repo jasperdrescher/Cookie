@@ -326,26 +326,7 @@ void ACookieCharacter::RefreshNameTag()
 
 void ACookieCharacter::Server_RefreshNameTag_Implementation()
 {
-	if (!NameTagWidget)
-	{
-		if (UUserWidget* NameTagUserWidget = NameTagWidgetComponent->GetUserWidgetObject())
-		{
-			NameTagWidget = Cast<UCkNameTagWidget>(NameTagUserWidget);
-		}
-	}
-
-	const ACkGamePlayerState* NameTagPlayerState = Cast<ACkGamePlayerState>(GetPlayerState());
-	if (NameTagWidget && NameTagPlayerState)
-	{
-		const FString RoleText = NameTagPlayerState->bIsHost ? " (Host)" : " (Client)";
-		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName() + RoleText));
-	}
-
-	const bool bIsLocalControlled = IsLocallyControlled();
-	if (NameTagWidgetComponent)
-	{
-		NameTagWidgetComponent->SetVisibility(!bIsLocalControlled);
-	}
+	RefreshNameTag();
 }
 
 void ACookieCharacter::Server_ApplyPlayerColorToMesh_Implementation(const FColor& PlayerColor)

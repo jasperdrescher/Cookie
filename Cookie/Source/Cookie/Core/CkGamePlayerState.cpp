@@ -44,6 +44,9 @@ void ACkGamePlayerState::OnRep_Cookies()
 
 void ACkGamePlayerState::PickRandomPlayerColor()
 {
+	if (PlayerColor != FColor::White)
+		return;
+	
 	if (AvailablePlayerColors.IsEmpty())
 	{
 		UE_LOG(LogCookie, Warning, TEXT("Array is empty, cannot get random item."));
