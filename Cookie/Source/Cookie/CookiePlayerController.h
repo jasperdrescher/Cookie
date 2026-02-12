@@ -4,28 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Player/CkPlayerControllerBase.h"
 
 #include "CookiePlayerController.generated.h"
 
 class UInputMappingContext;
-class UUserWidget;
-class UCkTextChatComponent;
 
 /**
  *  Basic PlayerController class for a third person game
  *  Manages input mappings
  */
 UCLASS(abstract)
-class ACookiePlayerController : public APlayerController
+class ACookiePlayerController : public ACkPlayerControllerBase
 {
 	GENERATED_BODY()
-
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
-	TSubclassOf<UCkTextChatComponent> TextChatComponentClass;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UCkTextChatComponent* TextChatComponent = nullptr;
 
 protected:
 

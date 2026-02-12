@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Player/CkPlayerControllerBase.h"
 
 #include "CombatPlayerController.generated.h"
 
@@ -11,7 +12,7 @@ class UInputMappingContext;
 class ACombatCharacter;
 
 UCLASS(abstract, Config="Game")
-class ACombatPlayerController : public APlayerController
+class ACombatPlayerController : public ACkPlayerControllerBase
 {
 	GENERATED_BODY()
 	
