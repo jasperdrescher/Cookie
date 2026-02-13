@@ -628,7 +628,7 @@ void ACombatCharacter::Multicast_HandleDeath_Implementation()
 
 	LifeBar->SetHiddenInGame(true);
 
-	if (GetController() != nullptr && GetController()->IsLocalController())
+	if (IsLocallyControlled())
 	{
 		GetCameraBoom()->TargetArmLength = DeathCameraDistance;
 	}
