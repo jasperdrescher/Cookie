@@ -1,20 +1,23 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-
 #include "CombatEnemy.h"
-#include "Components/CapsuleComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
+
+#include "Animation/AnimInstance.h"
 #include "CombatAIController.h"
+#include "CombatLifeBar.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Engine/DamageEvents.h"
-#include "CombatLifeBar.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
-#include "Components/SkeletalMeshComponent.h"
-#include "Animation/AnimInstance.h"
 
 ACombatEnemy::ACombatEnemy()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	// bind the attack montage ended delegate
 	OnAttackMontageEnded.BindUObject(this, &ACombatEnemy::AttackMontageEnded);

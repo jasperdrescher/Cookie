@@ -1,17 +1,19 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-
 #include "CombatEnemySpawner.h"
-#include "Engine/World.h"
-#include "Components/SceneComponent.h"
-#include "Components/CapsuleComponent.h"
-#include "Components/ArrowComponent.h"
-#include "TimerManager.h"
+
 #include "CombatEnemy.h"
+#include "Components/ArrowComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SceneComponent.h"
+#include "Engine/World.h"
+#include "TimerManager.h"
 
 ACombatEnemySpawner::ACombatEnemySpawner()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	bReplicates = true;
 
 	// create the root
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -31,6 +33,9 @@ ACombatEnemySpawner::ACombatEnemySpawner()
 void ACombatEnemySpawner::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (!HasAuthority())
+		return;
 	
 	// should we spawn an enemy right away?
 	if (bShouldSpawnEnemiesImmediately)
@@ -38,12 +43,14 @@ void ACombatEnemySpawner::BeginPlay()
 		// schedule the first enemy spawn
 		GetWorld()->GetTimerManager().SetTimer(SpawnTimer, this, &ACombatEnemySpawner::SpawnEnemy, InitialSpawnDelay);
 	}
-
 }
 
 void ACombatEnemySpawner::EndPlay(EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
+
+	if (!HasAuthority())
+		return;
 
 	// clear the spawn timer
 	GetWorld()->GetTimerManager().ClearTimer(SpawnTimer);
