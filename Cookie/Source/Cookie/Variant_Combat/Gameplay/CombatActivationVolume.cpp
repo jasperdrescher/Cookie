@@ -10,6 +10,8 @@ ACombatActivationVolume::ACombatActivationVolume()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	bReplicates = true;
+
 	// create the box volume
 	RootComponent = Box = CreateDefaultSubobject<UBoxComponent>(TEXT("Box"));
 	check(Box);
@@ -26,6 +28,9 @@ ACombatActivationVolume::ACombatActivationVolume()
 
 void ACombatActivationVolume::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (!HasAuthority())
+		return;
+
 	// has a Character entered the volume?
 	ACharacter* PlayerCharacter = Cast<ACharacter>(OtherActor);
 
@@ -45,5 +50,4 @@ void ACombatActivationVolume::OnOverlap(UPrimitiveComponent* OverlappedComponent
 			}
 		}
 	}
-
 }
