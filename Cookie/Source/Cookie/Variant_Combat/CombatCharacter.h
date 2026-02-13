@@ -416,7 +416,7 @@ protected:
 
 	/** Handles possessed initialization */
 	virtual void NotifyControllerChanged() override;
-
+	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

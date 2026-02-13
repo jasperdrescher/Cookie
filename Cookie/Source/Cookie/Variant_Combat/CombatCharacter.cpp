@@ -756,6 +756,21 @@ void ACombatCharacter::NotifyControllerChanged()
 	}
 }
 
+void ACombatCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (!HasAuthority())
+		return;
+
+	if (const APlayerState* PlayerStateBase = GetPlayerState())
+	{
+		const ACkGamePlayerState* GamePlayerState = Cast<ACkGamePlayerState>(PlayerStateBase);
+		RefreshNameTag();
+		BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
+	}
+}
+
 void ACombatCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
