@@ -17,9 +17,9 @@ class COOKIE_API ACkPlayerControllerBase : public APlayerController
 public:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
+	UPROPERTY(EditDefaultsOnly, Category = "Components")
 	TSubclassOf<UCkTextChatComponent> TextChatComponentClass;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UCkTextChatComponent* TextChatComponent = nullptr;
+	TObjectPtr<UCkTextChatComponent> TextChatComponent = nullptr;
 };

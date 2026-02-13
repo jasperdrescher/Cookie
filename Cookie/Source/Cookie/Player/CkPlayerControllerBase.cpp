@@ -8,13 +8,13 @@ void ACkPlayerControllerBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (TextChatComponentClass && !TextChatComponent)
+	if (TextChatComponentClass)
 	{
 		TextChatComponent = NewObject<UCkTextChatComponent>(this, TextChatComponentClass);
-
 		if (TextChatComponent)
 		{
 			AddInstanceComponent(TextChatComponent);
+			TextChatComponent->OnComponentCreated();
 			TextChatComponent->RegisterComponent();
 		}
 	}
