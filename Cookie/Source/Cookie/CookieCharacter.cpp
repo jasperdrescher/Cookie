@@ -9,18 +9,13 @@
 #include "Components/WidgetComponent.h"
 #include "Cookie.h"
 #include "Core/CkGamePlayerState.h"
-#include "Engine/LocalPlayer.h"
 #include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetSystemLibrary.h"
-#include "Net/UnrealNetwork.h"
-#include "Sound/SoundBase.h"
 #include "UI/CkCookieCounterWidget.h"
 #include "UI/CkGameHUD.h"
 #include "UI/CkNameTagWidget.h"
@@ -90,9 +85,6 @@ ACookieCharacter::ACookieCharacter()
 	CookieCounterWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	CookieCounterWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, 182.f));
 	CookieCounterWidgetComponent->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
-
-	MaxHealth = 100.0f;
-	CurrentHealth = MaxHealth;
 
 	Tags.Add(FName("Player"));
 }
@@ -197,50 +189,6 @@ void ACookieCharacter::DoJumpEnd()
 void ACookieCharacter::GetLifetimeReplicatedProps(TArray <FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ACookieCharacter, CurrentHealth);
-}
-
-void ACookieCharacter::OnHealthUpdate()
-{
-	if (IsLocallyControlled())
-	{
-		FString healthMessage = FString::Printf(TEXT("You now have %f health remaining."), CurrentHealth);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
-
-		if (CurrentHealth <= 0)
-		{
-			FString deathMessage = FString::Printf(TEXT("You have been killed."));
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, deathMessage);
-		}
-	}
-
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		FString healthMessage = FString::Printf(TEXT("%s now has %f health remaining."), *GetFName().ToString(), CurrentHealth);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
-	}
-}
-
-void ACookieCharacter::OnRep_CurrentHealth()
-{
-	OnHealthUpdate();
-}
-
-void ACookieCharacter::SetCurrentHealth(float healthValue)
-{
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		CurrentHealth = FMath::Clamp(healthValue, 0.f, MaxHealth);
-		OnHealthUpdate();
-	}
-}
-
-float ACookieCharacter::TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-{
-	float damageApplied = CurrentHealth - DamageTaken;
-	SetCurrentHealth(damageApplied);
-	return damageApplied;
 }
 
 void ACookieCharacter::OnOverlapBegin(UPrimitiveComponent* /*OverlappedComp*/, AActor* OtherActor, UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/, bool /*bFromSweep*/, const FHitResult& /*SweepResult*/)
