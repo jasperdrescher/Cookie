@@ -169,9 +169,6 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_EnemyPlayMontageInfo)
 	FEnemyCharacterPlayMontageInfo EnemyPlayMontageInfo;
 
-	UPROPERTY(ReplicatedUsing = OnRep_MontageSectionName)
-	FName MontageSectionName;
-
 public:
 	/** Attack completed internal delegate to notify StateTree tasks */
 	FOnEnemyAttackCompleted OnAttackCompleted;
@@ -259,6 +256,9 @@ protected:
 	UFUNCTION(Server, Unreliable)
 	void Server_PlayAnimMontage(UAnimMontage* AnimMontage, float PlayRate = 1.f, FName StartSectionName = NAME_None);
 
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayMontageSection(FName MontageSectionName);
+
 	UFUNCTION()
 	void OnRep_CurrentHP();
 
@@ -267,9 +267,6 @@ protected:
 
 	UFUNCTION()
 	void OnRep_EnemyPlayMontageInfo();
-
-	UFUNCTION()
-	void OnRep_MontageSectionName();
 
 protected:
 

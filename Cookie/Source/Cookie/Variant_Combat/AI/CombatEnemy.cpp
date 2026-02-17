@@ -200,7 +200,7 @@ void ACombatEnemy::CheckCombo()
 		// jump to the next attack section
 		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 		{
-			MontageSectionName = ComboSectionNames[CurrentComboAttack];
+			Multicast_PlayMontageSection(ComboSectionNames[CurrentComboAttack]);
 
 			AnimInstance->Montage_JumpToSection(ComboSectionNames[CurrentComboAttack], ComboAttackMontage);
 		}
@@ -218,7 +218,7 @@ void ACombatEnemy::CheckChargedAttack()
 	// jump to either the loop or attack section of the montage depending on whether we hit the loop target
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		MontageSectionName = CurrentChargeLoop >= TargetChargeLoops ? ChargeAttackSection : ChargeLoopSection;
+		Multicast_PlayMontageSection(CurrentChargeLoop >= TargetChargeLoops ? ChargeAttackSection : ChargeLoopSection);
 
 		AnimInstance->Montage_JumpToSection(CurrentChargeLoop >= TargetChargeLoops ? ChargeAttackSection : ChargeLoopSection, ChargedAttackMontage);
 	}
@@ -355,7 +355,6 @@ void ACombatEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(ACombatEnemy, CurrentHP);
 	DOREPLIFETIME(ACombatEnemy, MaxHP);
 	DOREPLIFETIME(ACombatEnemy, EnemyPlayMontageInfo);
-	DOREPLIFETIME(ACombatEnemy, MontageSectionName);
 }
 
 void ACombatEnemy::BeginPlay()
@@ -394,6 +393,17 @@ void ACombatEnemy::Server_PlayAnimMontage_Implementation(UAnimMontage* AnimMonta
 	if (const AGameStateBase* GameStateBase = UGameplayStatics::GetGameState(this))
 	{
 		EnemyPlayMontageInfo.TimeRequested = GameStateBase->GetServerWorldTimeSeconds();
+	}
+}
+
+void ACombatEnemy::Multicast_PlayMontageSection_Implementation(FName MontageSectionName)
+{
+	if (!IsValid(EnemyPlayMontageInfo.Montage))
+		return;
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->Montage_JumpToSection(MontageSectionName, EnemyPlayMontageInfo.Montage);
 	}
 }
 
@@ -448,23 +458,12 @@ void ACombatEnemy::OnRep_EnemyPlayMontageInfo()
 				// I think this possibly breaks the lag compensation, so maybe don't use this if you want good sync
 				if (TimeLeft > 0.f && EnemyPlayMontageInfo.StartSectionName != NAME_None)
 				{
-					MontageSectionName = EnemyPlayMontageInfo.StartSectionName;
+					Multicast_PlayMontageSection(EnemyPlayMontageInfo.StartSectionName);
 
 					AnimInstance->Montage_JumpToSection(EnemyPlayMontageInfo.StartSectionName, EnemyPlayMontageInfo.Montage);
 				}
 			}
 		}
-	}
-}
-
-void ACombatEnemy::OnRep_MontageSectionName()
-{
-	if (!IsValid(EnemyPlayMontageInfo.Montage))
-		return;
-
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		AnimInstance->Montage_JumpToSection(MontageSectionName, EnemyPlayMontageInfo.Montage);
 	}
 }
 
