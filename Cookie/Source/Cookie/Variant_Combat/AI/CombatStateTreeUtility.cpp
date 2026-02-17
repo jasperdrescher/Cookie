@@ -298,21 +298,60 @@ FText FStateTreeSetCharacterSpeedTask::GetDescription(const FGuid& ID, FStateTre
 
 EStateTreeRunStatus FStateTreeGetPlayerInfoTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
-	// get the instance data
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 
-	// get the character possessed by the first local player
-	InstanceData.TargetPlayerCharacter = Cast<ACharacter>(UGameplayStatics::GetPlayerPawn(InstanceData.Character, 0));
-
-	// do we have a valid target?
-	if (InstanceData.TargetPlayerCharacter)
+	if (!InstanceData.Character)
 	{
-		// update the last known location
-		InstanceData.TargetPlayerLocation = InstanceData.TargetPlayerCharacter->GetActorLocation();
+		InstanceData.TargetPlayerCharacter = nullptr;
+		InstanceData.TargetPlayerLocation = FVector::ZeroVector;
+		InstanceData.DistanceToTarget = BIG_NUMBER;
+		return EStateTreeRunStatus::Running;
 	}
 
-	// update the distance
-	InstanceData.DistanceToTarget = FVector::Distance(InstanceData.TargetPlayerLocation, InstanceData.Character->GetActorLocation());
+	const UWorld* World = InstanceData.Character->GetWorld();
+	if (!World)
+	{
+		InstanceData.TargetPlayerCharacter = nullptr;
+		InstanceData.TargetPlayerLocation = FVector::ZeroVector;
+		InstanceData.DistanceToTarget = BIG_NUMBER;
+		return EStateTreeRunStatus::Running;
+	}
+
+	const FVector OwnerActorLocation = InstanceData.Character->GetActorLocation();
+
+	float ClosestDistanceSquared = TNumericLimits<float>::Max();
+	ACharacter* BestChar = nullptr;
+
+	for (FConstPlayerControllerIterator PlayerControllerIterator = World->GetPlayerControllerIterator(); PlayerControllerIterator; ++PlayerControllerIterator)
+	{
+		const APlayerController* PlayerController = PlayerControllerIterator->Get();
+		if (!PlayerController)
+			continue;
+
+		APawn* PlayerPawn = PlayerController->GetPawn();
+		if (!IsValid(PlayerPawn) || PlayerPawn == InstanceData.Character)
+			continue;
+
+		const float DistSq = FVector::DistSquared(OwnerActorLocation, PlayerPawn->GetActorLocation());
+		if (DistSq < ClosestDistanceSquared)
+		{
+			ClosestDistanceSquared = DistSq;
+			BestChar = Cast<ACharacter>(PlayerPawn);
+		}
+	}
+
+	InstanceData.TargetPlayerCharacter = BestChar;
+
+	if (InstanceData.TargetPlayerCharacter)
+	{
+		InstanceData.TargetPlayerLocation = InstanceData.TargetPlayerCharacter->GetActorLocation();
+		InstanceData.DistanceToTarget = FMath::Sqrt(ClosestDistanceSquared);
+	}
+	else
+	{
+		InstanceData.TargetPlayerLocation = FVector::ZeroVector;
+		InstanceData.DistanceToTarget = BIG_NUMBER;
+	}
 
 	return EStateTreeRunStatus::Running;
 }
