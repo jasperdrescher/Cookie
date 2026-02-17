@@ -10,6 +10,9 @@
 #include "Components/WidgetComponent.h"
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/GameStateBase.h"
+#include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 
 ACombatEnemy::ACombatEnemy()
@@ -62,16 +65,20 @@ void ACombatEnemy::DoAIComboAttack()
 	// reset the attack counter
 	CurrentComboAttack = 0;
 
-	// play the attack montage
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	if (!ComboAttackMontage)
 	{
-		const float MontageLength = AnimInstance->Montage_Play(ComboAttackMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+		UE_LOG(LogTemp, Warning, TEXT("Missing ComboAttackMontage"));
+		return;
+	}
 
-		// subscribe to montage completed and interrupted events
-		if (MontageLength > 0.0f)
+	Server_PlayAnimMontage(ComboAttackMontage);
+
+	const float MontageLength = PlayAnimMontage(EnemyPlayMontageInfo.Montage, EnemyPlayMontageInfo.PlayRate, EnemyPlayMontageInfo.StartSectionName);
+	if (MontageLength > 0.f)
+	{
+		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
 		{
-			// set the end delegate for the montage
-			AnimInstance->Montage_SetEndDelegate(OnAttackMontageEnded, ComboAttackMontage);
+			AnimInst->Montage_SetEndDelegate(OnAttackMontageEnded, ComboAttackMontage);
 		}
 	}
 }
@@ -93,16 +100,20 @@ void ACombatEnemy::DoAIChargedAttack()
 	// reset the charge loop counter
 	CurrentChargeLoop = 0;
 
-	// play the attack montage
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	if (!ChargedAttackMontage)
 	{
-		const float MontageLength = AnimInstance->Montage_Play(ChargedAttackMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+		UE_LOG(LogTemp, Warning, TEXT("Missing ChargedAttackMontage"));
+		return;
+	}
 
-		// subscribe to montage completed and interrupted events
-		if (MontageLength > 0.0f)
+	Server_PlayAnimMontage(ChargedAttackMontage);
+
+	const float MontageLength = PlayAnimMontage(EnemyPlayMontageInfo.Montage, EnemyPlayMontageInfo.PlayRate, EnemyPlayMontageInfo.StartSectionName);
+	if (MontageLength > 0.f)
+	{
+		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
 		{
-			// set the end delegate for the montage
-			AnimInstance->Montage_SetEndDelegate(OnAttackMontageEnded, ChargedAttackMontage);
+			AnimInst->Montage_SetEndDelegate(OnAttackMontageEnded, ChargedAttackMontage);
 		}
 	}
 }
@@ -128,6 +139,9 @@ float ACombatEnemy::GetLastDangerTime() const
 
 void ACombatEnemy::DoAttackTrace(FName DamageSourceBone)
 {
+	if (!HasAuthority())
+		return;
+
 	// sweep for objects in front of the character to be hit by the attack
 	TArray<FHitResult> OutHits;
 
@@ -174,6 +188,9 @@ void ACombatEnemy::DoAttackTrace(FName DamageSourceBone)
 
 void ACombatEnemy::CheckCombo()
 {
+	if (!HasAuthority())
+		return;
+
 	// increase the combo counter
 	++CurrentComboAttack;
 
@@ -183,6 +200,8 @@ void ACombatEnemy::CheckCombo()
 		// jump to the next attack section
 		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 		{
+			MontageSectionName = ComboSectionNames[CurrentComboAttack];
+
 			AnimInstance->Montage_JumpToSection(ComboSectionNames[CurrentComboAttack], ComboAttackMontage);
 		}
 	}
@@ -190,19 +209,26 @@ void ACombatEnemy::CheckCombo()
 
 void ACombatEnemy::CheckChargedAttack()
 {
+	if (!HasAuthority())
+		return;
+
 	// increase the charge loop counter
 	++CurrentChargeLoop;
 
 	// jump to either the loop or attack section of the montage depending on whether we hit the loop target
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
+		MontageSectionName = CurrentChargeLoop >= TargetChargeLoops ? ChargeAttackSection : ChargeLoopSection;
+
 		AnimInstance->Montage_JumpToSection(CurrentChargeLoop >= TargetChargeLoops ? ChargeAttackSection : ChargeLoopSection, ChargedAttackMontage);
 	}
 }
 
 void ACombatEnemy::ApplyDamage(float Damage, AActor* DamageCauser, const FVector& DamageLocation, const FVector& DamageImpulse)
 {
-	
+	if (!HasAuthority())
+		return;
+
 	// pass the damage event to the actor
 	FDamageEvent DamageEvent;
 	const float ActualDamage = TakeDamage(Damage, DamageEvent, nullptr, DamageCauser);
@@ -234,6 +260,9 @@ void ACombatEnemy::ApplyDamage(float Damage, AActor* DamageCauser, const FVector
 
 void ACombatEnemy::HandleDeath()
 {
+	if (!HasAuthority())
+		return;
+
 	// hide the life bar
 	LifeBar->SetHiddenInGame(true);
 
@@ -260,6 +289,9 @@ void ACombatEnemy::ApplyHealing(float Healing, AActor* Healer)
 
 void ACombatEnemy::NotifyDanger(const FVector& DangerLocation, AActor* DangerSource)
 {
+	if (!HasAuthority())
+		return;
+
 	// ensure we're being attacked by the player
 	if (DangerSource && DangerSource->ActorHasTag(FName("Player")))
 	{
@@ -277,32 +309,26 @@ void ACombatEnemy::RemoveFromLevel()
 
 float ACombatEnemy::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	// only process damage if the character is still alive
-	if (CurrentHP <= 0.0f)
-	{
-		return 0.0f;
-	}
+	if (!HasAuthority())
+		return 0.f;
 
-	// reduce the current HP
+	if (CurrentHP <= 0.f)
+		return 0.f;
+
 	CurrentHP -= Damage;
 
-	// have we run out of HP?
-	if (CurrentHP <= 0.0f)
+	UpdateLifeBar();
+
+	if (CurrentHP <= 0.f)
 	{
-		// die
 		HandleDeath();
 	}
 	else
 	{
-		// update the life bar
-		LifeBarWidget->SetLifePercentage(CurrentHP / MaxHP);
-
-		// enable partial ragdoll physics, but keep the pelvis vertical
 		GetMesh()->SetPhysicsBlendWeight(0.5f);
 		GetMesh()->SetBodySimulatePhysics(PelvisBoneName, false);
 	}
 
-	// return the received damage amount
 	return Damage;
 }
 
@@ -321,6 +347,17 @@ void ACombatEnemy::Landed(const FHitResult& Hit)
 	OnEnemyLanded.ExecuteIfBound();
 }
 
+void ACombatEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ACombatEnemy, bIsAttacking);
+	DOREPLIFETIME(ACombatEnemy, CurrentHP);
+	DOREPLIFETIME(ACombatEnemy, MaxHP);
+	DOREPLIFETIME(ACombatEnemy, EnemyPlayMontageInfo);
+	DOREPLIFETIME(ACombatEnemy, MontageSectionName);
+}
+
 void ACombatEnemy::BeginPlay()
 {
 	// reset HP to maximum
@@ -333,14 +370,108 @@ void ACombatEnemy::BeginPlay()
 	LifeBarWidget = Cast<UCombatLifeBar>(LifeBar->GetUserWidgetObject());
 	check(LifeBarWidget);
 
-	// fill the life bar
-	LifeBarWidget->SetLifePercentage(1.0f);
+	UpdateLifeBar();
 }
 
 void ACombatEnemy::EndPlay(EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 
+	if (!HasAuthority())
+		return;
+
 	// clear the death timer
 	GetWorld()->GetTimerManager().ClearTimer(DeathTimer);
+}
+
+void ACombatEnemy::Server_PlayAnimMontage_Implementation(UAnimMontage* AnimMontage, float PlayRate, FName StartSectionName)
+{
+	EnemyPlayMontageInfo.Montage = AnimMontage;
+	EnemyPlayMontageInfo.PlayRate = PlayRate;
+	EnemyPlayMontageInfo.StartSectionName = StartSectionName;
+	EnemyPlayMontageInfo.bRequestStop = false;
+
+	if (const AGameStateBase* GameStateBase = UGameplayStatics::GetGameState(this))
+	{
+		EnemyPlayMontageInfo.TimeRequested = GameStateBase->GetServerWorldTimeSeconds();
+	}
+}
+
+void ACombatEnemy::OnRep_CurrentHP()
+{
+	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
+
+	UpdateLifeBar();
+}
+
+void ACombatEnemy::OnRep_MaxHP()
+{
+	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
+
+	UpdateLifeBar();
+}
+
+void ACombatEnemy::OnRep_EnemyPlayMontageInfo()
+{
+	if (!IsValid(EnemyPlayMontageInfo.Montage))
+		return;
+
+	if (EnemyPlayMontageInfo.bRequestStop)
+	{
+		StopAnimMontage(EnemyPlayMontageInfo.Montage);
+	}
+	else
+	{
+		// We want to advance the montage to account for lag and sync up the animations everywhere as best we can
+		// It's possible that because of extreme lag, or network relevancy meaning this is replicated long after
+		// it was requested, that we don't need to play this montage.
+
+		float PlayOffset = 0.f;
+		const float Duration = EnemyPlayMontageInfo.Montage->GetPlayLength() / EnemyPlayMontageInfo.PlayRate;
+		if (AGameStateBase* GameStateBase = UGameplayStatics::GetGameState(this))
+		{
+			PlayOffset = GameStateBase->GetServerWorldTimeSeconds() - EnemyPlayMontageInfo.TimeRequested;
+			if (PlayOffset >= Duration)
+			{
+				// Skip, this play was requested too long ago
+				return;
+			}
+		}
+
+		// We need to use the lower level play montage function so we have access to start time
+		if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+		{
+			if (UAnimInstance* AnimInstance = CharacterMesh->GetAnimInstance())
+			{
+				const float TimeLeft = AnimInstance->Montage_Play(EnemyPlayMontageInfo.Montage, EnemyPlayMontageInfo.PlayRate, EMontagePlayReturnType::Duration, PlayOffset);
+
+				// I think this possibly breaks the lag compensation, so maybe don't use this if you want good sync
+				if (TimeLeft > 0.f && EnemyPlayMontageInfo.StartSectionName != NAME_None)
+				{
+					MontageSectionName = EnemyPlayMontageInfo.StartSectionName;
+
+					AnimInstance->Montage_JumpToSection(EnemyPlayMontageInfo.StartSectionName, EnemyPlayMontageInfo.Montage);
+				}
+			}
+		}
+	}
+}
+
+void ACombatEnemy::OnRep_MontageSectionName()
+{
+	if (!IsValid(EnemyPlayMontageInfo.Montage))
+		return;
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->Montage_JumpToSection(MontageSectionName, EnemyPlayMontageInfo.Montage);
+	}
+}
+
+void ACombatEnemy::UpdateLifeBar()
+{
+	if (LifeBarWidget)
+	{
+		LifeBarWidget->SetLifePercentage(CurrentHP / MaxHP);
+	}
 }

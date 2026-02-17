@@ -2,12 +2,13 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "Animation/AnimMontage.h"
 #include "CombatAttacker.h"
 #include "CombatDamageable.h"
-#include "Animation/AnimMontage.h"
+#include "CoreMinimal.h"
 #include "Engine/TimerHandle.h"
+#include "GameFramework/Character.h"
+
 #include "CombatEnemy.generated.h"
 
 class UWidgetComponent;
@@ -22,6 +23,28 @@ DECLARE_DELEGATE(FOnEnemyLanded);
 
 /** Enemy died delegate */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEnemyDied);
+
+USTRUCT(BlueprintType)
+struct FEnemyCharacterPlayMontageInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite)
+	UAnimMontage* Montage = nullptr;
+
+	UPROPERTY(BlueprintReadWrite)
+	float PlayRate = 1.f;
+
+	UPROPERTY(BlueprintReadWrite)
+	FName StartSectionName = NAME_None;
+
+	UPROPERTY(BlueprintReadWrite)
+	double TimeRequested = 0.f;
+
+	/// Used to stop the same montage playing; useful if not being replaced by another
+	UPROPERTY(BlueprintReadWrite)
+	bool bRequestStop = false;
+};
 
 /**
  *  An AI-controlled character with combat capabilities.
@@ -44,14 +67,14 @@ public:
 protected:
 
 	/** Max amount of HP the character will have on respawn */
-	UPROPERTY(EditAnywhere, Category="Damage")
-	float MaxHP = 3.0f;
+	UPROPERTY(ReplicatedUsing = OnRep_MaxHP, EditAnywhere, Category="Damage")
+	float MaxHP = 3.f;
 
 public:
 
 	/** Current amount of HP the character has */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Damage", meta = (ClampMin = 0, ClampMax = 100))
-	float CurrentHP = 0.0f;
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentHP, VisibleAnywhere, BlueprintReadOnly, Category="Damage", meta = (ClampMin = 0, ClampMax = 100))
+	float CurrentHP = 0.f;
 
 protected:
 
@@ -64,6 +87,7 @@ protected:
 	UCombatLifeBar* LifeBarWidget;
 
 	/** If true, the character is currently playing an attack animation */
+	UPROPERTY(Replicated)
 	bool bIsAttacking = false;
 
 	/** Distance ahead of the character that melee attack sphere collision traces will extend */
@@ -142,6 +166,12 @@ protected:
 	/** Last recorded game time we were attacked */
 	float LastDangerTime = -1000.0f;
 
+	UPROPERTY(ReplicatedUsing = OnRep_EnemyPlayMontageInfo)
+	FEnemyCharacterPlayMontageInfo EnemyPlayMontageInfo;
+
+	UPROPERTY(ReplicatedUsing = OnRep_MontageSectionName)
+	FName MontageSectionName;
+
 public:
 	/** Attack completed internal delegate to notify StateTree tasks */
 	FOnEnemyAttackCompleted OnAttackCompleted;
@@ -208,6 +238,8 @@ protected:
 	/** Removes this character from the level after it dies */
 	void RemoveFromLevel();
 
+	void UpdateLifeBar();
+
 public:
 
 	/** Overrides the default TakeDamage functionality */
@@ -216,11 +248,28 @@ public:
 	/** Overrides landing to reset damage ragdoll physics */
 	virtual void Landed(const FHitResult& Hit) override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 protected:
 
 	/** Blueprint handler to play damage received effects */
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
 	void ReceivedDamage(float Damage, const FVector& ImpactPoint, const FVector& DamageDirection);
+
+	UFUNCTION(Server, Unreliable)
+	void Server_PlayAnimMontage(UAnimMontage* AnimMontage, float PlayRate = 1.f, FName StartSectionName = NAME_None);
+
+	UFUNCTION()
+	void OnRep_CurrentHP();
+
+	UFUNCTION()
+	void OnRep_MaxHP();
+
+	UFUNCTION()
+	void OnRep_EnemyPlayMontageInfo();
+
+	UFUNCTION()
+	void OnRep_MontageSectionName();
 
 protected:
 
