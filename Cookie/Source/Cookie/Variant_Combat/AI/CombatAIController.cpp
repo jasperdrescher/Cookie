@@ -1,19 +1,42 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-
 #include "CombatAIController.h"
+
 #include "Components/StateTreeAIComponent.h"
 
 ACombatAIController::ACombatAIController()
 {
-	// create the StateTree AI Component
-	StateTreeAI = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("StateTreeAI"));
-	check(StateTreeAI);
+	StateTreeAIComponent = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("StateTreeAIComponent"));
+	check(StateTreeAIComponent);
 
-	// ensure we start the StateTree when we possess the pawn
-	bStartAILogicOnPossess = true;
+	StateTreeAIComponent->SetStartLogicAutomatically(false);
 
-	// ensure we're attached to the possessed character.
-	// this is necessary for EnvQueries to work correctly
+	bStartAILogicOnPossess = false;
+	bStopAILogicOnUnposses = false;
 	bAttachToPawn = true;
+}
+
+void ACombatAIController::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+void ACombatAIController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	if (HasAuthority())
+	{
+		StateTreeAIComponent->StartLogic();
+	}
+}
+
+void ACombatAIController::OnUnPossess()
+{
+	Super::OnUnPossess();
+
+	if (HasAuthority())
+	{
+		StateTreeAIComponent->StopLogic("OnUnPossess");
+	}
 }
