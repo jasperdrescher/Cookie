@@ -320,7 +320,7 @@ EStateTreeRunStatus FStateTreeGetPlayerInfoTask::Tick(FStateTreeExecutionContext
 	const FVector OwnerActorLocation = InstanceData.Character->GetActorLocation();
 
 	float ClosestDistanceSquared = TNumericLimits<float>::Max();
-	ACharacter* BestChar = nullptr;
+	ACharacter* ClosestCharacter = nullptr;
 
 	for (FConstPlayerControllerIterator PlayerControllerIterator = World->GetPlayerControllerIterator(); PlayerControllerIterator; ++PlayerControllerIterator)
 	{
@@ -332,15 +332,15 @@ EStateTreeRunStatus FStateTreeGetPlayerInfoTask::Tick(FStateTreeExecutionContext
 		if (!IsValid(PlayerPawn) || PlayerPawn == InstanceData.Character)
 			continue;
 
-		const float DistSq = FVector::DistSquared(OwnerActorLocation, PlayerPawn->GetActorLocation());
-		if (DistSq < ClosestDistanceSquared)
+		const float DistanceSqured = FVector::DistSquared(OwnerActorLocation, PlayerPawn->GetActorLocation());
+		if (DistanceSqured < ClosestDistanceSquared)
 		{
-			ClosestDistanceSquared = DistSq;
-			BestChar = Cast<ACharacter>(PlayerPawn);
+			ClosestDistanceSquared = DistanceSqured;
+			ClosestCharacter = Cast<ACharacter>(PlayerPawn);
 		}
 	}
 
-	InstanceData.TargetPlayerCharacter = BestChar;
+	InstanceData.TargetPlayerCharacter = ClosestCharacter;
 
 	if (InstanceData.TargetPlayerCharacter)
 	{
