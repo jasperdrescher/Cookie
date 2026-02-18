@@ -10,6 +10,7 @@
 
 class UInputMappingContext;
 class ACombatCharacter;
+class UUserWidget;
 
 UCLASS(abstract, Config="Game")
 class ACombatPlayerController : public ACkPlayerControllerBase
@@ -25,6 +26,12 @@ protected:
 
 	FTransform RespawnTransform;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> VictoryWidgetClass;
+
+	UPROPERTY()
+	UUserWidget* VictoryWidget;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
@@ -32,6 +39,9 @@ protected:
 
 public:
 	void SetRespawnTransform(const FTransform& NewRespawn);
+
+	UFUNCTION(Client, Reliable)
+	void Client_ShowVictoryWidget();
 
 protected:
 	UFUNCTION()

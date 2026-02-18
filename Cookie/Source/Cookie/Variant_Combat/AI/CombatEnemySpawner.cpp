@@ -7,7 +7,9 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include "Variant_Combat/CombatGameMode.h"
 
 ACombatEnemySpawner::ACombatEnemySpawner()
 {
@@ -84,8 +86,17 @@ void ACombatEnemySpawner::OnEnemyDied()
 	// is this the last enemy we should spawn?
 	if (SpawnCount <= 0)
 	{
-		// schedule the activation on depleted message
-		GetWorld()->GetTimerManager().SetTimer(SpawnTimer, this, &ACombatEnemySpawner::SpawnerDepleted, ActivationDelay);
+		ACombatGameMode* CombatGameMode = Cast<ACombatGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+		if (CombatGameMode)
+		{
+			CombatGameMode->EnemyDied();
+		}
+
+		if (!ActorsToActivateWhenDepleted.IsEmpty())
+		{
+			GetWorld()->GetTimerManager().SetTimer(SpawnTimer, this, &ACombatEnemySpawner::SpawnerDepleted, ActivationDelay);
+		}
+
 		return;
 	}
 

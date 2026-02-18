@@ -2,11 +2,11 @@
 
 #include "Variant_Combat/CombatPlayerController.h"
 
-#include "CombatCharacter.h"
-#include "Engine/LocalPlayer.h"
+#include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "Variant_Combat/CombatCharacter.h"
 
 void ACombatPlayerController::BeginPlay()
 {
@@ -43,6 +43,22 @@ void ACombatPlayerController::SetRespawnTransform(const FTransform& NewRespawn)
 {
 	// save the new respawn transform
 	RespawnTransform = NewRespawn;
+}
+
+void ACombatPlayerController::Client_ShowVictoryWidget_Implementation()
+{
+	if (VictoryWidgetClass != nullptr && VictoryWidget == nullptr)
+	{
+		VictoryWidget = CreateWidget<UUserWidget>(this, VictoryWidgetClass);
+
+		if (VictoryWidget)
+		{
+			VictoryWidget->AddToViewport();
+
+			bShowMouseCursor = true;
+			SetInputMode(FInputModeUIOnly().SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock));
+		}
+	}
 }
 
 void ACombatPlayerController::OnPawnDestroyed(AActor* /*DestroyedActor*/)

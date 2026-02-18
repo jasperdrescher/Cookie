@@ -69,6 +69,8 @@ public:
 	/** Constructor */
 	ACombatEnemySpawner();
 
+	int GetSpawnCount() const { return SpawnCount; }
+
 public:
 
 	/** Initialization */
