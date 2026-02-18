@@ -254,8 +254,13 @@ void ACombatEnemy::ApplyDamage(float Damage, AActor* DamageCauser, const FVector
 		}
 
 		// pass control to BP to play effects, etc.
-		ReceivedDamage(ActualDamage, DamageLocation, DamageImpulse.GetSafeNormal());
+		Multicast_PlayDamageReceivedEffect(ActualDamage, DamageLocation, DamageImpulse.GetSafeNormal());
 	}
+}
+
+void ACombatEnemy::Multicast_PlayDamageReceivedEffect_Implementation(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse)
+{
+	ReceivedDamage(Damage, DamageLocation, DamageImpulse.GetSafeNormal());
 }
 
 void ACombatEnemy::HandleDeath()

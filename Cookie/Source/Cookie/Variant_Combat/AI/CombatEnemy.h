@@ -253,6 +253,9 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
 	void ReceivedDamage(float Damage, const FVector& ImpactPoint, const FVector& DamageDirection);
 
+	UFUNCTION(NetMulticast, Reliable, Category = "Combat")
+	void Multicast_PlayDamageReceivedEffect(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse);
+
 	UFUNCTION(Server, Unreliable)
 	void Server_PlayAnimMontage(UAnimMontage* AnimMontage, float PlayRate = 1.f, FName StartSectionName = NAME_None);
 
