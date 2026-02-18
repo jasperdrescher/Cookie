@@ -389,17 +389,9 @@ void ACombatCharacter::Server_ApplyDamage_Implementation(float Damage, AActor* D
 	const float ActualDamage = TakeDamage(Damage, DamageEvent, nullptr, DamageCauser);
 
 	// only process knockback and effects if we received nonzero damage
-	if (ActualDamage > 0.0f)
+	if (ActualDamage > 0.f)
 	{
-		// apply the knockback impulse
-		GetCharacterMovement()->AddImpulse(DamageImpulse, true);
-
-		// is the character ragdolling?
-		if (GetMesh()->IsSimulatingPhysics())
-		{
-			// apply an impulse to the ragdoll
-			GetMesh()->AddImpulseAtLocation(DamageImpulse * GetMesh()->GetMass(), DamageLocation);
-		}
+		Multicast_ApplyDamage(DamageLocation, DamageImpulse);
 
 		Multicast_PlayDamageReceivedEffect(ActualDamage, DamageLocation, DamageImpulse);
 	}
@@ -645,6 +637,19 @@ void ACombatCharacter::Multicast_HandleDeath_Implementation()
 void ACombatCharacter::Server_ApplyPlayerColorToMesh_Implementation(const FColor& PlayerColor)
 {
 	BP_ApplyPlayerColorToMesh(PlayerColor);
+}
+
+void ACombatCharacter::Multicast_ApplyDamage_Implementation(const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse)
+{
+	// apply the knockback impulse
+	GetCharacterMovement()->AddImpulse(DamageImpulse, true);
+
+	// is the character ragdolling?
+	if (GetMesh()->IsSimulatingPhysics())
+	{
+		// apply an impulse to the ragdoll
+		GetMesh()->AddImpulseAtLocation(DamageImpulse * GetMesh()->GetMass(), DamageLocation);
+	}
 }
 
 void ACombatCharacter::UpdateLifeBar()

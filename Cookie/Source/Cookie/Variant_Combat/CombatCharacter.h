@@ -400,6 +400,9 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_Landed();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ApplyDamage(const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse);
+
 	UFUNCTION(Server, Reliable)
 	void Server_ApplyPlayerColorToMesh(const FColor& PlayerColor);
 
