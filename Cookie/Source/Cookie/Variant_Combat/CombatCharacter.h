@@ -394,6 +394,12 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_HandleDeath();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_HandleDamage();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_Landed();
+
 	UFUNCTION(Server, Reliable)
 	void Server_ApplyPlayerColorToMesh(const FColor& PlayerColor);
 

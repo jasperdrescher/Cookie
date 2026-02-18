@@ -506,9 +506,7 @@ float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dama
 	}
 	else
 	{
-		// enable partial ragdoll physics, but keep the pelvis vertical
-		GetMesh()->SetPhysicsBlendWeight(0.5f);
-		GetMesh()->SetBodySimulatePhysics(PelvisBoneName, false);
+		Multicast_HandleDamage();
 	}
 
 	return Damage;
@@ -521,8 +519,7 @@ void ACombatCharacter::Landed(const FHitResult& Hit)
 	// is the character still alive?
 	if (CurrentHP >= 0.0f)
 	{
-		// disable ragdoll physics
-		GetMesh()->SetPhysicsBlendWeight(0.0f);
+		Multicast_Landed();
 	}
 }
 
@@ -618,6 +615,17 @@ void ACombatCharacter::OnRep_MaxHP()
 	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
 
 	UpdateLifeBar();
+}
+
+void ACombatCharacter::Multicast_Landed_Implementation()
+{
+	GetMesh()->SetPhysicsBlendWeight(0.f);
+}
+
+void ACombatCharacter::Multicast_HandleDamage_Implementation()
+{
+	GetMesh()->SetPhysicsBlendWeight(0.5f);
+	GetMesh()->SetBodySimulatePhysics(PelvisBoneName, false);
 }
 
 void ACombatCharacter::Multicast_HandleDeath_Implementation()
