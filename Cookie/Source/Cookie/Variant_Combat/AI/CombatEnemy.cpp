@@ -50,6 +50,9 @@ ACombatEnemy::ACombatEnemy()
 
 void ACombatEnemy::DoAIComboAttack()
 {
+	if (!HasAuthority())
+		return;
+
 	// ignore if we're already playing an attack animation
 	if (bIsAttacking)
 	{
@@ -85,6 +88,9 @@ void ACombatEnemy::DoAIComboAttack()
 
 void ACombatEnemy::DoAIChargedAttack()
 {
+	if (!HasAuthority())
+		return;
+
 	// ignore if we're already playing an attack animation
 	if (bIsAttacking)
 	{
