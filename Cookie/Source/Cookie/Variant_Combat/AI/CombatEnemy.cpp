@@ -240,26 +240,10 @@ void ACombatEnemy::ApplyDamage(float Damage, AActor* DamageCauser, const FVector
 	const float ActualDamage = TakeDamage(Damage, DamageEvent, nullptr, DamageCauser);
 
 	// only process knockback and effects if we received nonzero damage
-	if (ActualDamage > 0.0f)
+	if (ActualDamage > 0.f)
 	{
-		// apply the knockback impulse
-		GetCharacterMovement()->AddImpulse(DamageImpulse, true);
+		Multicast_ApplyDamage(DamageLocation, DamageImpulse);
 
-		// is the character ragdolling?
-		if (GetMesh()->IsSimulatingPhysics())
-		{
-			// apply an impulse to the ragdoll
-			GetMesh()->AddImpulseAtLocation(DamageImpulse * GetMesh()->GetMass(), DamageLocation);
-		}
-
-		// stop the attack montages to interrupt the attack
-		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-		{
-			AnimInstance->Montage_Stop(0.1f, ComboAttackMontage);
-			AnimInstance->Montage_Stop(0.1f, ChargedAttackMontage);
-		}
-
-		// pass control to BP to play effects, etc.
 		Multicast_PlayDamageReceivedEffect(ActualDamage, DamageLocation, DamageImpulse.GetSafeNormal());
 	}
 }
@@ -269,11 +253,34 @@ void ACombatEnemy::Multicast_PlayDamageReceivedEffect_Implementation(float Damag
 	ReceivedDamage(Damage, DamageLocation, DamageImpulse.GetSafeNormal());
 }
 
-void ACombatEnemy::HandleDeath()
+void ACombatEnemy::Multicast_ApplyDamage_Implementation(const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse)
 {
-	if (!HasAuthority())
-		return;
+	// apply the knockback impulse
+	GetCharacterMovement()->AddImpulse(DamageImpulse, true);
 
+	// is the character ragdolling?
+	if (GetMesh()->IsSimulatingPhysics())
+	{
+		// apply an impulse to the ragdoll
+		GetMesh()->AddImpulseAtLocation(DamageImpulse * GetMesh()->GetMass(), DamageLocation);
+	}
+
+	// stop the attack montages to interrupt the attack
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->Montage_Stop(0.1f, ComboAttackMontage);
+		AnimInstance->Montage_Stop(0.1f, ChargedAttackMontage);
+	}
+}
+
+void ACombatEnemy::Multicast_HandleDamage_Implementation()
+{
+	GetMesh()->SetPhysicsBlendWeight(0.5f);
+	GetMesh()->SetBodySimulatePhysics(PelvisBoneName, false);
+}
+
+void ACombatEnemy::Multicast_HandleDeath_Implementation()
+{
 	// hide the life bar
 	LifeBar->SetHiddenInGame(true);
 
@@ -285,12 +292,23 @@ void ACombatEnemy::HandleDeath()
 
 	// enable full ragdoll physics
 	GetMesh()->SetSimulatePhysics(true);
+}
 
-	// call the died delegate to notify any subscribers
+void ACombatEnemy::Multicast_Landed_Implementation()
+{
+	GetMesh()->SetPhysicsBlendWeight(0.f);
+}
+
+void ACombatEnemy::HandleDeath()
+{
+	if (!HasAuthority())
+		return;
+
+	GetWorld()->GetTimerManager().SetTimer(DeathTimer, this, &ACombatEnemy::RemoveFromLevel, DeathRemovalTime);
+
 	OnEnemyDied.Broadcast();
 
-	// set up the death timer
-	GetWorld()->GetTimerManager().SetTimer(DeathTimer, this, &ACombatEnemy::RemoveFromLevel, DeathRemovalTime);
+	Multicast_HandleDeath();
 }
 
 void ACombatEnemy::ApplyHealing(float Healing, AActor* Healer)
@@ -336,8 +354,7 @@ float ACombatEnemy::TakeDamage(float Damage, struct FDamageEvent const& DamageEv
 	}
 	else
 	{
-		GetMesh()->SetPhysicsBlendWeight(0.5f);
-		GetMesh()->SetBodySimulatePhysics(PelvisBoneName, false);
+		Multicast_HandleDamage();
 	}
 
 	return Damage;
@@ -348,10 +365,9 @@ void ACombatEnemy::Landed(const FHitResult& Hit)
 	Super::Landed(Hit);
 
 	// is the character still alive?
-	if (CurrentHP >= 0.0f)
+	if (CurrentHP >= 0.f)
 	{
-		// disable ragdoll physics
-		GetMesh()->SetPhysicsBlendWeight(0.0f);
+		Multicast_Landed();
 	}
 
 	// call the landed Delegate for StateTree

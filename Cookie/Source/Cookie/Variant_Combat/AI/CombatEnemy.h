@@ -256,6 +256,18 @@ protected:
 	UFUNCTION(NetMulticast, Reliable, Category = "Combat")
 	void Multicast_PlayDamageReceivedEffect(float Damage, const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ApplyDamage(const FVector_NetQuantize& DamageLocation, const FVector_NetQuantize& DamageImpulse);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_HandleDamage();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_HandleDeath();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_Landed();
+
 	UFUNCTION(Server, Unreliable)
 	void Server_PlayAnimMontage(UAnimMontage* AnimMontage, float PlayRate = 1.f, FName StartSectionName = NAME_None);
 
