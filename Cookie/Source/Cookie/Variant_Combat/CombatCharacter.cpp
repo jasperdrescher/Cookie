@@ -728,8 +728,6 @@ void ACombatCharacter::OnAttackTargetCollisionBeginOverlap(UPrimitiveComponent* 
 
 	if (OtherActor && OtherActor != this)
 	{
-		UE_LOG(LogCookie, Warning, TEXT("Overlapped component: %s"), *OtherComp->GetName());
-
 		if (Cast<UCapsuleComponent>(OtherComp) != nullptr)
 		{
 			if (OtherActor->ActorHasTag("Enemy") || OtherActor->ActorHasTag("Player"))
