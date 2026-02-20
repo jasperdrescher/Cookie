@@ -12,6 +12,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/GameStateBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "MotionWarpingComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 
@@ -33,6 +34,8 @@ ACombatEnemy::ACombatEnemy()
 
 	// ignore the controller's yaw rotation
 	bUseControllerRotationYaw = false;
+
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 
 	// create the life bar
 	LifeBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("LifeBar"));
@@ -408,6 +411,17 @@ void ACombatEnemy::EndPlay(EEndPlayReason::Type EndPlayReason)
 
 	// clear the death timer
 	GetWorld()->GetTimerManager().ClearTimer(DeathTimer);
+}
+
+void ACombatEnemy::UpdateAttackWarpTarget(AActor* FocusedActor)
+{
+	if (!FocusedActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Invalid focused target"));
+		return;
+	}
+
+	MotionWarpingComponent->AddOrUpdateWarpTargetFromTransform("AttackWarpTarget", FTransform(GetActorRotation(), FocusedActor->GetActorLocation(), GetActorScale()));
 }
 
 void ACombatEnemy::Server_PlayAnimMontage_Implementation(UAnimMontage* AnimMontage, float PlayRate, FName StartSectionName)

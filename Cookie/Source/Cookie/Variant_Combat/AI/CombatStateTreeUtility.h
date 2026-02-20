@@ -123,6 +123,10 @@ struct FStateTreeAttackInstanceData
 	/** Character that will perform the attack */
 	UPROPERTY(EditAnywhere, Category = Context)
 	TObjectPtr<ACombatEnemy> Character;
+
+	/** AI Controller that has the focused actor*/
+	UPROPERTY(EditAnywhere, Category = Context)
+	TObjectPtr<AAIController> Controller;
 };
 
 /**

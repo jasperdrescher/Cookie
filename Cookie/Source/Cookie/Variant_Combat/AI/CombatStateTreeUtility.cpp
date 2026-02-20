@@ -81,8 +81,7 @@ EStateTreeRunStatus FStateTreeComboAttackTask::EnterState(FStateTreeExecutionCon
 			}
 		);
 
-
-		// tell the character to do a combo attack
+		InstanceData.Character->UpdateAttackWarpTarget(InstanceData.Controller->GetFocusActor());
 		InstanceData.Character->DoAIComboAttack();
 	}
 
@@ -127,7 +126,7 @@ EStateTreeRunStatus FStateTreeChargedAttackTask::EnterState(FStateTreeExecutionC
 			}
 		);
 
-		// tell the character to do a charged attack
+		InstanceData.Character->UpdateAttackWarpTarget(InstanceData.Controller->GetFocusActor());
 		InstanceData.Character->DoAIChargedAttack();
 	}
 

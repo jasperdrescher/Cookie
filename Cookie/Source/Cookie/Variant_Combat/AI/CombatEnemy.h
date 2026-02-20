@@ -14,6 +14,7 @@
 class UWidgetComponent;
 class UCombatLifeBar;
 class UAnimMontage;
+class UMotionWarpingComponent;
 
 /** Completed attack animation delegate for StateTree */
 DECLARE_DELEGATE(FOnEnemyAttackCompleted);
@@ -64,6 +65,8 @@ public:
 	/** Constructor */
 	ACombatEnemy();
 
+	void UpdateAttackWarpTarget(AActor* FocusedActor);
+
 protected:
 
 	/** Max amount of HP the character will have on respawn */
@@ -77,6 +80,9 @@ public:
 	float CurrentHP = 0.f;
 
 protected:
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UMotionWarpingComponent* MotionWarpingComponent;
 
 	/** Name of the pelvis bone, for damage ragdoll physics */
 	UPROPERTY(EditAnywhere, Category="Damage")
