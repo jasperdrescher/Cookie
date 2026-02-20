@@ -164,8 +164,6 @@ void ACombatCharacter::Server_DoComboAttackStart_Implementation()
 		return;
 	}
 
-	UpdateAttackWarpTarget(AttackTarget);
-
 	Server_ComboAttack();
 }
 
@@ -189,8 +187,6 @@ void ACombatCharacter::Server_DoChargedAttackStart_Implementation()
 		CachedAttackInputTime = GetWorld()->GetTimeSeconds();
 		return;
 	}
-
-	UpdateAttackWarpTarget(AttackTarget);
 
 	Server_ChargedAttack();
 }
@@ -676,7 +672,20 @@ void ACombatCharacter::UpdateAttackWarpTarget(AActor* FocusedActor)
 		return;
 	}
 
-	Multicast_UpdateWarpTarget(FocusedActor->GetActorLocation());
+	Multicast_UpdateAttackWarpTarget(FocusedActor->GetActorLocation());
+}
+
+void ACombatCharacter::RemoveAttackWarpTarget()
+{
+	if (!HasAuthority())
+		return;
+
+	Multicast_RemoveAttackWarpTarget();
+}
+
+void ACombatCharacter::Multicast_RemoveAttackWarpTarget_Implementation()
+{
+	MotionWarpingComponent->RemoveWarpTarget("AttackWarpTarget");
 }
 
 void ACombatCharacter::UpdateLifeBar()
@@ -716,7 +725,7 @@ void ACombatCharacter::Server_RefreshNameTag_Implementation()
 	RefreshNameTag();
 }
 
-void ACombatCharacter::Multicast_UpdateWarpTarget_Implementation(const FVector_NetQuantize& WarpTargetLocation)
+void ACombatCharacter::Multicast_UpdateAttackWarpTarget_Implementation(const FVector_NetQuantize& WarpTargetLocation)
 {
 	MotionWarpingComponent->AddOrUpdateWarpTargetFromTransform("AttackWarpTarget", FTransform(GetActorRotation(), WarpTargetLocation, GetActorScale()));
 }
@@ -732,14 +741,10 @@ void ACombatCharacter::OnAttackTargetCollisionBeginOverlap(UPrimitiveComponent* 
 		{
 			if (OtherActor->ActorHasTag("Enemy") || OtherActor->ActorHasTag("Player"))
 			{
-				AttackTarget = OtherActor;
-
-				return;
+				UpdateAttackWarpTarget(OtherActor);
 			}
 		}
 	}
-
-	AttackTarget = nullptr;
 }
 
 void ACombatCharacter::OnAttackTargetCollisionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -753,7 +758,7 @@ void ACombatCharacter::OnAttackTargetCollisionEndOverlap(UPrimitiveComponent* Ov
 		{
 			if (OtherActor->ActorHasTag("Enemy") || OtherActor->ActorHasTag("Player"))
 			{
-				AttackTarget = nullptr;
+				RemoveAttackWarpTarget();
 			}
 		}
 	}

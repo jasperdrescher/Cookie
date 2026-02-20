@@ -426,7 +426,15 @@ void ACombatEnemy::UpdateAttackWarpTarget(AActor* FocusedActor)
 		return;
 	}
 
-	Multicast_UpdateWarpTarget(FocusedActor->GetActorLocation());
+	Multicast_UpdateAttackWarpTarget(FocusedActor->GetActorLocation());
+}
+
+void ACombatEnemy::RemoveAttackWarpTarget()
+{
+	if (!HasAuthority())
+		return;
+
+	Multicast_RemoveAttackWarpTarget();
 }
 
 void ACombatEnemy::Server_PlayAnimMontage_Implementation(UAnimMontage* AnimMontage, float PlayRate, FName StartSectionName)
@@ -453,9 +461,14 @@ void ACombatEnemy::Multicast_PlayMontageSection_Implementation(FName MontageSect
 	}
 }
 
-void ACombatEnemy::Multicast_UpdateWarpTarget_Implementation(const FVector_NetQuantize& WarpTargetLocation)
+void ACombatEnemy::Multicast_UpdateAttackWarpTarget_Implementation(const FVector_NetQuantize& WarpTargetLocation)
 {
 	MotionWarpingComponent->AddOrUpdateWarpTargetFromTransform("AttackWarpTarget", FTransform(GetActorRotation(), WarpTargetLocation, GetActorScale()));
+}
+
+void ACombatEnemy::Multicast_RemoveAttackWarpTarget_Implementation()
+{
+	MotionWarpingComponent->RemoveWarpTarget("AttackWarpTarget");
 }
 
 void ACombatEnemy::OnRep_CurrentHP()

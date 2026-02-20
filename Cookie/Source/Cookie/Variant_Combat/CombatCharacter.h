@@ -418,21 +418,23 @@ protected:
 	void Server_RefreshNameTag();
 
 	UFUNCTION(NetMulticast, Reliable, Category = "Combat")
-	void Multicast_UpdateWarpTarget(const FVector_NetQuantize& WarpTargetLocation);
+	void Multicast_UpdateAttackWarpTarget(const FVector_NetQuantize& WarpTargetLocation);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Combat")
+	void Multicast_RemoveAttackWarpTarget();
 
 private:
 	void UpdateLifeBar();
 
 	void UpdateAttackWarpTarget(AActor* FocusedActor);
 
+	void RemoveAttackWarpTarget();
+
 	UFUNCTION()
 	void OnAttackTargetCollisionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
 	void OnAttackTargetCollisionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	UPROPERTY()
-	AActor* AttackTarget = nullptr;
 
 protected:
 

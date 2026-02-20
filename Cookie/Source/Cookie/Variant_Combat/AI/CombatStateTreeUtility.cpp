@@ -98,6 +98,8 @@ void FStateTreeComboAttackTask::ExitState(FStateTreeExecutionContext& Context, c
 
 		// unbind the on attack completed delegate
 		InstanceData.Character->OnAttackCompleted.Unbind();
+
+		InstanceData.Character->RemoveAttackWarpTarget();
 	}
 }
 
@@ -143,6 +145,8 @@ void FStateTreeChargedAttackTask::ExitState(FStateTreeExecutionContext& Context,
 
 		// unbind the on attack completed delegate
 		InstanceData.Character->OnAttackCompleted.Unbind();
+
+		InstanceData.Character->RemoveAttackWarpTarget();
 	}
 }
 
