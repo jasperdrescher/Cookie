@@ -274,6 +274,9 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_Landed();
 
+	UFUNCTION(NetMulticast, Reliable, Category = "Combat")
+	void Multicast_UpdateWarpTarget(const FVector_NetQuantize& WarpTargetLocation);
+
 	UFUNCTION(Server, Unreliable)
 	void Server_PlayAnimMontage(UAnimMontage* AnimMontage, float PlayRate = 1.f, FName StartSectionName = NAME_None);
 

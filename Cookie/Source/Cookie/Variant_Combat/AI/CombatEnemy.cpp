@@ -415,13 +415,16 @@ void ACombatEnemy::EndPlay(EEndPlayReason::Type EndPlayReason)
 
 void ACombatEnemy::UpdateAttackWarpTarget(AActor* FocusedActor)
 {
+	if (!HasAuthority())
+		return;
+
 	if (!FocusedActor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Invalid focused target"));
 		return;
 	}
 
-	MotionWarpingComponent->AddOrUpdateWarpTargetFromTransform("AttackWarpTarget", FTransform(GetActorRotation(), FocusedActor->GetActorLocation(), GetActorScale()));
+	Multicast_UpdateWarpTarget(FocusedActor->GetActorLocation());
 }
 
 void ACombatEnemy::Server_PlayAnimMontage_Implementation(UAnimMontage* AnimMontage, float PlayRate, FName StartSectionName)
@@ -446,6 +449,11 @@ void ACombatEnemy::Multicast_PlayMontageSection_Implementation(FName MontageSect
 	{
 		AnimInstance->Montage_JumpToSection(MontageSectionName, EnemyPlayMontageInfo.Montage);
 	}
+}
+
+void ACombatEnemy::Multicast_UpdateWarpTarget_Implementation(const FVector_NetQuantize& WarpTargetLocation)
+{
+	MotionWarpingComponent->AddOrUpdateWarpTargetFromTransform("AttackWarpTarget", FTransform(GetActorRotation(), WarpTargetLocation, GetActorScale()));
 }
 
 void ACombatEnemy::OnRep_CurrentHP()
