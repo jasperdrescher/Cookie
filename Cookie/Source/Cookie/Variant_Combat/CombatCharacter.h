@@ -18,6 +18,8 @@ struct FDamageEvent;
 class UCombatLifeBar;
 class UWidgetComponent;
 class UCkNameTagWidget;
+class UMotionWarpingComponent;
+class USphereComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCombatCharacter, Log, All);
 
@@ -204,6 +206,12 @@ protected:
 
 	/** Copy of the mesh's transform so we can reset it after ragdoll animations */
 	FTransform MeshStartingTransform;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UMotionWarpingComponent* MotionWarpingComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	USphereComponent* AttackTargetCollisionSphere;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	UWidgetComponent* NameTagWidgetComponent;
@@ -409,8 +417,22 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_RefreshNameTag();
 
+	UFUNCTION(NetMulticast, Reliable, Category = "Combat")
+	void Multicast_UpdateWarpTarget(const FVector_NetQuantize& WarpTargetLocation);
+
 private:
 	void UpdateLifeBar();
+
+	void UpdateAttackWarpTarget(AActor* FocusedActor);
+
+	UFUNCTION()
+	void OnAttackTargetCollisionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnAttackTargetCollisionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	UPROPERTY()
+	AActor* AttackTarget = nullptr;
 
 protected:
 

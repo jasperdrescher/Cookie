@@ -49,6 +49,8 @@ ACombatEnemy::ACombatEnemy()
 
 	// reset HP to maximum
 	CurrentHP = MaxHP;
+
+	Tags.Add(FName("Enemy"));
 }
 
 void ACombatEnemy::DoAIComboAttack()

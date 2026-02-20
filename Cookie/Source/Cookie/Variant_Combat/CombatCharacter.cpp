@@ -8,6 +8,7 @@
 #include "CombatPlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Cookie.h"
 #include "Core/CkGamePlayerState.h"
@@ -17,6 +18,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "MotionWarpingComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 #include "UI/CkNameTagWidget.h"
@@ -66,7 +68,14 @@ ACombatCharacter::ACombatCharacter()
 	NameTagWidgetComponent->SetReceivesDecals(false);
 	NameTagWidgetComponent->SetTwoSided(true);
 
-	// set the player tag
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
+
+	AttackTargetCollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AttackTargetCollisionSphere"));
+	AttackTargetCollisionSphere->SetSphereRadius(50.f);
+	AttackTargetCollisionSphere->SetupAttachment(GetMesh());
+	AttackTargetCollisionSphere->SetRelativeLocation(FVector(0.f, 0.f, 90.f));
+	AttackTargetCollisionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+
 	Tags.Add(FName("Player"));
 }
 
@@ -155,6 +164,8 @@ void ACombatCharacter::Server_DoComboAttackStart_Implementation()
 		return;
 	}
 
+	UpdateAttackWarpTarget(AttackTarget);
+
 	Server_ComboAttack();
 }
 
@@ -178,6 +189,8 @@ void ACombatCharacter::Server_DoChargedAttackStart_Implementation()
 		CachedAttackInputTime = GetWorld()->GetTimeSeconds();
 		return;
 	}
+
+	UpdateAttackWarpTarget(AttackTarget);
 
 	Server_ChargedAttack();
 }
@@ -652,6 +665,20 @@ void ACombatCharacter::Multicast_ApplyDamage_Implementation(const FVector_NetQua
 	}
 }
 
+void ACombatCharacter::UpdateAttackWarpTarget(AActor* FocusedActor)
+{
+	if (!HasAuthority())
+		return;
+
+	if (!FocusedActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Invalid focused target"));
+		return;
+	}
+
+	Multicast_UpdateWarpTarget(FocusedActor->GetActorLocation());
+}
+
 void ACombatCharacter::UpdateLifeBar()
 {
 	if (LifeBarWidget)
@@ -689,9 +716,57 @@ void ACombatCharacter::Server_RefreshNameTag_Implementation()
 	RefreshNameTag();
 }
 
+void ACombatCharacter::Multicast_UpdateWarpTarget_Implementation(const FVector_NetQuantize& WarpTargetLocation)
+{
+	MotionWarpingComponent->AddOrUpdateWarpTargetFromTransform("AttackWarpTarget", FTransform(GetActorRotation(), WarpTargetLocation, GetActorScale()));
+}
+
+void ACombatCharacter::OnAttackTargetCollisionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!HasAuthority())
+		return;
+
+	if (OtherActor && OtherActor != this)
+	{
+		UE_LOG(LogCookie, Warning, TEXT("Overlapped component: %s"), *OtherComp->GetName());
+
+		if (Cast<UCapsuleComponent>(OtherComp) != nullptr)
+		{
+			if (OtherActor->ActorHasTag("Enemy") || OtherActor->ActorHasTag("Player"))
+			{
+				AttackTarget = OtherActor;
+
+				return;
+			}
+		}
+	}
+
+	AttackTarget = nullptr;
+}
+
+void ACombatCharacter::OnAttackTargetCollisionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (!HasAuthority())
+		return;
+
+	if (OtherActor && OtherActor != this)
+	{
+		if (Cast<UCapsuleComponent>(OtherComp) != nullptr)
+		{
+			if (OtherActor->ActorHasTag("Enemy") || OtherActor->ActorHasTag("Player"))
+			{
+				AttackTarget = nullptr;
+			}
+		}
+	}
+}
+
 void ACombatCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	AttackTargetCollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &ACombatCharacter::OnAttackTargetCollisionBeginOverlap);
+	AttackTargetCollisionSphere->OnComponentEndOverlap.AddDynamic(this, &ACombatCharacter::OnAttackTargetCollisionEndOverlap);
 
 	// get the life bar from the widget component
 	LifeBarWidget = Cast<UCombatLifeBar>(LifeBar->GetUserWidgetObject());
