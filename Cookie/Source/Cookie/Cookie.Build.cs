@@ -20,7 +20,8 @@ public class Cookie : ModuleRules
 			"UMG",
 			"Slate",
 			"RHI",
-			"AIModule"
+			"AIModule",
+			"MotionWarping"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {

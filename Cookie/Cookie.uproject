@@ -331,6 +331,10 @@
 		{
 			"Name": "MobilePatchingUtils",
 			"Enabled": false
+		},
+		{
+			"Name": "MotionWarping",
+			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [
