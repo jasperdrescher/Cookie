@@ -1,7 +1,7 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
+// Copyright (c) 2026 Jasper Drescher. All rights reserved.
 
 #include "Variant_Combat/AI/EnvQueryContext_Danger.h"
+
 #include "Variant_Combat/AI/CombatEnemy.h"
 #include "EnvironmentQuery/EnvQueryTypes.h"
 #include "EnvironmentQuery/Items/EnvQueryItemType_Point.h"

@@ -1,7 +1,7 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
+// Copyright (c) 2026 Jasper Drescher. All rights reserved.
 
 #include "AnimNotify_DoAttackTrace.h"
+
 #include "CombatAttacker.h"
 #include "Components/SkeletalMeshComponent.h"
 

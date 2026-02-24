@@ -1,7 +1,7 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
+// Copyright (c) 2026 Jasper Drescher. All rights reserved.
 
 #include "EnvQueryContext_Player.h"
+
 #include "Kismet/GameplayStatics.h"
 #include "EnvironmentQuery/EnvQueryTypes.h"
 #include "EnvironmentQuery/Items/EnvQueryItemType_Actor.h"

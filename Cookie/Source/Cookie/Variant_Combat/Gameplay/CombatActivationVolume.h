@@ -1,9 +1,10 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright (c) 2026 Jasper Drescher. All rights reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+
 #include "CombatActivationVolume.generated.h"
 
 class UBoxComponent;

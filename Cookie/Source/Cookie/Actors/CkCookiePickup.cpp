@@ -1,6 +1,7 @@
-// Copyright (c) 2025 Jasper Drescher. All rights reserved.
+// Copyright (c) 2026 Jasper Drescher. All rights reserved.
 
 #include "Actors/CkCookiePickup.h"
+
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/RotatingMovementComponent.h"
 

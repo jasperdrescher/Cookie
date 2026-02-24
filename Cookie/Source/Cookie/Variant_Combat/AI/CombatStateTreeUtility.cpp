@@ -1,7 +1,7 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
+// Copyright (c) 2026 Jasper Drescher. All rights reserved.
 
 #include "CombatStateTreeUtility.h"
+
 #include "StateTreeExecutionContext.h"
 #include "StateTreeExecutionTypes.h"
 #include "Engine/World.h"

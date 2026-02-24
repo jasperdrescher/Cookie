@@ -1,10 +1,10 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
+// Copyright (c) 2026 Jasper Drescher. All rights reserved.
 
 #include "CombatActivationVolume.h"
+
+#include "CombatActivatable.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
-#include "CombatActivatable.h"
 
 ACombatActivationVolume::ACombatActivationVolume()
 {
