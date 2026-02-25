@@ -640,6 +640,7 @@ void ACombatCharacter::Multicast_HandleDeath_Implementation()
 	if (IsLocallyControlled())
 	{
 		GetCameraBoom()->TargetArmLength = DeathCameraDistance;
+		DisableInput(Cast<APlayerController>(GetController()));
 	}
 }
 
