@@ -72,8 +72,8 @@ ACombatCharacter::ACombatCharacter()
 
 	AttackTargetCollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AttackTargetCollisionSphere"));
 	AttackTargetCollisionSphere->SetSphereRadius(50.f);
-	AttackTargetCollisionSphere->SetupAttachment(GetMesh());
-	AttackTargetCollisionSphere->SetRelativeLocation(FVector(0.f, 0.f, 90.f));
+	AttackTargetCollisionSphere->SetupAttachment(RootComponent);
+	AttackTargetCollisionSphere->SetRelativeLocation(FVector(80.f, 0.f, 0.f));
 	AttackTargetCollisionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 
 	Tags.Add(FName("Player"));
