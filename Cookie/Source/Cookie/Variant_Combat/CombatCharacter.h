@@ -15,7 +15,7 @@ class UCameraComponent;
 class UInputAction;
 struct FInputActionValue;
 struct FDamageEvent;
-class UCombatLifeBar;
+class UCkCombatPlayerOverheadWidget;
 class UWidgetComponent;
 class UCkNameTagWidget;
 class UMotionWarpingComponent;
@@ -57,10 +57,6 @@ class ACombatCharacter : public ACharacter, public ICombatAttacker, public IComb
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
-
-	/** Life bar widget component */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	UWidgetComponent* LifeBar;
 	
 protected:
 	/** Jump Input Action */
@@ -107,9 +103,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Damage")
 	FName PelvisBoneName;
 
-	/** Pointer to the life bar widget */
-	UPROPERTY(EditAnywhere, Category="Damage")
-	TObjectPtr<UCombatLifeBar> LifeBarWidget;
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TObjectPtr<UCkCombatPlayerOverheadWidget> OverheadWidget;
 
 	/** Max amount of time that may elapse for a non-combo attack input to not be considered stale */
 	UPROPERTY(EditAnywhere, Category="Melee Attack", meta = (ClampMin = 0, ClampMax = 5, Units = "s"))
@@ -214,9 +209,7 @@ protected:
 	USphereComponent* AttackTargetCollisionSphere;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
-	UWidgetComponent* NameTagWidgetComponent;
-
-	UCkNameTagWidget* NameTagWidget = nullptr;
+	UWidgetComponent* OverheadWidgetComponent;
 
 	UPROPERTY(ReplicatedUsing = OnRep_PlayMontageInfo)
 	FCharacterPlayMontageInfo PlayMontageInfo;

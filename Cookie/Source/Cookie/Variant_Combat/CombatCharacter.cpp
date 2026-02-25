@@ -21,6 +21,7 @@
 #include "MotionWarpingComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
+#include "UI/CkCombatPlayerOverheadWidget.h"
 #include "UI/CkNameTagWidget.h"
 
 ACombatCharacter::ACombatCharacter()
@@ -53,20 +54,9 @@ ACombatCharacter::ACombatCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
-	// create the life bar widget component
-	LifeBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("LifeBar"));
-	LifeBar->SetupAttachment(RootComponent);
-
-	NameTagWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("Nameplate"));
-	NameTagWidgetComponent->SetupAttachment(GetMesh());
-	NameTagWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
-	NameTagWidgetComponent->SetDrawSize(FVector2D(200.f, 40.f));
-	NameTagWidgetComponent->SetPivot(FVector2D(0.5f, 0.f));
-	NameTagWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, 110.f));
-	NameTagWidgetComponent->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
-	NameTagWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	NameTagWidgetComponent->SetReceivesDecals(false);
-	NameTagWidgetComponent->SetTwoSided(true);
+	OverheadWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
+	OverheadWidgetComponent->SetupAttachment(RootComponent);
+	OverheadWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 
@@ -635,7 +625,7 @@ void ACombatCharacter::Multicast_HandleDeath_Implementation()
 
 	GetMesh()->SetSimulatePhysics(true);
 
-	LifeBar->SetHiddenInGame(true);
+	OverheadWidgetComponent->SetHiddenInGame(true);
 
 	if (IsLocallyControlled())
 	{
@@ -691,33 +681,33 @@ void ACombatCharacter::Multicast_RemoveAttackWarpTarget_Implementation()
 
 void ACombatCharacter::UpdateLifeBar()
 {
-	if (LifeBarWidget)
+	if (OverheadWidget)
 	{
-		LifeBarWidget->SetLifePercentage(CurrentHP / MaxHP);
+		OverheadWidget->SetLifePercentage(CurrentHP / MaxHP);
 	}
 }
 
 void ACombatCharacter::RefreshNameTag()
 {
-	if (!NameTagWidget)
+	if (!OverheadWidgetComponent)
 	{
-		if (UUserWidget* NameTagUserWidget = NameTagWidgetComponent->GetUserWidgetObject())
+		if (UUserWidget* OverheadUserWidget = OverheadWidgetComponent->GetUserWidgetObject())
 		{
-			NameTagWidget = Cast<UCkNameTagWidget>(NameTagUserWidget);
+			OverheadWidget = Cast<UCkCombatPlayerOverheadWidget>(OverheadUserWidget);
 		}
 	}
 
-	const ACkGamePlayerState* NameTagPlayerState = Cast<ACkGamePlayerState>(GetPlayerState());
-	if (NameTagWidget && NameTagPlayerState)
+	const ACkGamePlayerState* GamePlayerState = Cast<ACkGamePlayerState>(GetPlayerState());
+	if (OverheadWidget && GamePlayerState)
 	{
-		const FString RoleText = NameTagPlayerState->bIsHost ? " (Host)" : " (Client)";
-		NameTagWidget->SetPlayerName(FText::FromString(NameTagPlayerState->GetPlayerName() + RoleText));
+		const FString RoleText = GamePlayerState->bIsHost ? " (Host)" : " (Client)";
+		OverheadWidget->SetPlayerName(FText::FromString(GamePlayerState->GetPlayerName() + RoleText));
 	}
 
 	const bool bIsLocalControlled = IsLocallyControlled();
-	if (NameTagWidgetComponent)
+	if (OverheadWidgetComponent)
 	{
-		NameTagWidgetComponent->SetVisibility(!bIsLocalControlled);
+		OverheadWidgetComponent->SetVisibility(!bIsLocalControlled);
 	}
 }
 
@@ -773,8 +763,8 @@ void ACombatCharacter::BeginPlay()
 	AttackTargetCollisionSphere->OnComponentEndOverlap.AddDynamic(this, &ACombatCharacter::OnAttackTargetCollisionEndOverlap);
 
 	// get the life bar from the widget component
-	LifeBarWidget = Cast<UCombatLifeBar>(LifeBar->GetUserWidgetObject());
-	check(LifeBarWidget);
+	OverheadWidget = Cast<UCkCombatPlayerOverheadWidget>(OverheadWidgetComponent->GetUserWidgetObject());
+	check(OverheadWidget);
 
 	// initialize the camera
 	GetCameraBoom()->TargetArmLength = DefaultCameraDistance;
@@ -783,7 +773,7 @@ void ACombatCharacter::BeginPlay()
 	MeshStartingTransform = GetMesh()->GetRelativeTransform();
 
 	// set the life bar color
-	LifeBarWidget->SetBarColor(LifeBarColor);
+	OverheadWidget->SetBarColor(LifeBarColor);
 
 	// reset HP to maximum
 	ResetHP();
