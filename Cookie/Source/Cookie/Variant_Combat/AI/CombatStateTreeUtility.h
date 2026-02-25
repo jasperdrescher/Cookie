@@ -56,6 +56,33 @@ struct FStateTreeCharacterGroundedCondition : public FStateTreeConditionCommonBa
 
 };
 
+USTRUCT()
+struct FStateTreeTargetCharacterAliveConditionInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	ACharacter* TargetCharacter;
+};
+STATETREE_POD_INSTANCEDATA(FStateTreeTargetCharacterAliveConditionInstanceData);
+
+USTRUCT(DisplayName = "Target Character is Alive")
+struct FStateTreeTargetCharacterAliveCondition : public FStateTreeConditionCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FStateTreeTargetCharacterAliveConditionInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	FStateTreeTargetCharacterAliveCondition() = default;
+
+	virtual bool TestCondition(FStateTreeExecutionContext& Context) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
 ////////////////////////////////////////////////////////////////////
 
 /**

@@ -461,4 +461,6 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	FORCEINLINE bool IsAlive() const { return CurrentHP > 0.f; }
 };

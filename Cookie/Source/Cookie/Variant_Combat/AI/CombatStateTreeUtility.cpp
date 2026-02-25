@@ -2,15 +2,16 @@
 
 #include "CombatStateTreeUtility.h"
 
-#include "StateTreeExecutionContext.h"
-#include "StateTreeExecutionTypes.h"
+#include "AIController.h"
+#include "CombatCharacter.h"
+#include "CombatEnemy.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "AIController.h"
-#include "CombatEnemy.h"
 #include "Kismet/GameplayStatics.h"
 #include "StateTreeAsyncExecutionContext.h"
+#include "StateTreeExecutionContext.h"
+#include "StateTreeExecutionTypes.h"
 
 bool FStateTreeCharacterGroundedCondition::TestCondition(FStateTreeExecutionContext& Context) const
 {
@@ -26,6 +27,23 @@ bool FStateTreeCharacterGroundedCondition::TestCondition(FStateTreeExecutionCont
 FText FStateTreeCharacterGroundedCondition::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting /*= EStateTreeNodeFormatting::Text*/) const
 {
 	return FText::FromString("<b>Is Character Grounded</b>");
+}
+#endif // WITH_EDITOR
+
+bool FStateTreeTargetCharacterAliveCondition::TestCondition(FStateTreeExecutionContext& Context) const
+{
+	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+
+	if (InstanceData.TargetCharacter)
+		return Cast<ACombatCharacter>(InstanceData.TargetCharacter)->IsAlive();
+
+	return false;
+}
+
+#if WITH_EDITOR
+FText FStateTreeTargetCharacterAliveCondition::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting /*= EStateTreeNodeFormatting::Text*/) const
+{
+	return FText::FromString("<b>Is Target Character Alive</b>");
 }
 #endif // WITH_EDITOR
 
