@@ -4,6 +4,22 @@
 
 #include "UI/CkCombatHUDWidget.h"
 
+void ACkCombatHUD::SetLifePercentage(float Percent)
+{
+	if (HUDWidget)
+	{
+		Cast<UCkCombatHUDWidget>(HUDWidget)->SetLifePercentage(Percent);
+	}
+}
+
+void ACkCombatHUD::SetBarColor(const FLinearColor& Color)
+{
+	if (HUDWidget)
+	{
+		Cast<UCkCombatHUDWidget>(HUDWidget)->SetBarColor(Color);
+	}
+}
+
 void ACkCombatHUD::BeginPlay()
 {
 	Super::BeginPlay();

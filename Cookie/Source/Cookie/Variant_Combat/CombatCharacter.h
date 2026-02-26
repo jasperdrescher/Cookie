@@ -17,7 +17,6 @@ struct FInputActionValue;
 struct FDamageEvent;
 class UCkCombatPlayerOverheadWidget;
 class UWidgetComponent;
-class UCkNameTagWidget;
 class UMotionWarpingComponent;
 class USphereComponent;
 

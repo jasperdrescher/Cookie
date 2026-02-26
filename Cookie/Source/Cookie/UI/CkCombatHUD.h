@@ -14,6 +14,10 @@ class COOKIE_API ACkCombatHUD : public AHUD
 {
 	GENERATED_BODY()
 
+public:
+	void SetLifePercentage(float Percent);
+	void SetBarColor(const FLinearColor& Color);
+
 protected:
 	virtual void BeginPlay() override;
 

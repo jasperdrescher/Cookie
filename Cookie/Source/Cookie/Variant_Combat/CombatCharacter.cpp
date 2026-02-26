@@ -4,7 +4,6 @@
 
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
-#include "CombatLifeBar.h"
 #include "CombatPlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -21,8 +20,8 @@
 #include "MotionWarpingComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
+#include "UI/CkCombatHUD.h"
 #include "UI/CkCombatPlayerOverheadWidget.h"
-#include "UI/CkNameTagWidget.h"
 
 ACombatCharacter::ACombatCharacter()
 {
@@ -267,6 +266,8 @@ void ACombatCharacter::Server_CheckComboAttack_Implementation()
 void ACombatCharacter::ResetHP()
 {
 	CurrentHP = MaxHP;
+
+	UpdateLifeBar();
 }
 
 void ACombatCharacter::Server_ComboAttack_Implementation()
@@ -685,6 +686,19 @@ void ACombatCharacter::UpdateLifeBar()
 	{
 		OverheadWidget->SetLifePercentage(CurrentHP / MaxHP);
 	}
+
+	if (IsLocallyControlled())
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		if (PlayerController)
+		{
+			ACkCombatHUD* GameHUD = Cast<ACkCombatHUD>(PlayerController->GetHUD());
+			if (GameHUD)
+			{
+				GameHUD->SetLifePercentage(CurrentHP / MaxHP);
+			}
+		}
+	}
 }
 
 void ACombatCharacter::RefreshNameTag()
@@ -774,6 +788,19 @@ void ACombatCharacter::BeginPlay()
 
 	// set the life bar color
 	OverheadWidget->SetBarColor(LifeBarColor);
+
+	if (IsLocallyControlled())
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		if (PlayerController)
+		{
+			ACkCombatHUD* GameHUD = Cast<ACkCombatHUD>(PlayerController->GetHUD());
+			if (GameHUD)
+			{
+				GameHUD->SetBarColor(LifeBarColor);
+			}
+		}
+	}
 
 	// reset HP to maximum
 	ResetHP();

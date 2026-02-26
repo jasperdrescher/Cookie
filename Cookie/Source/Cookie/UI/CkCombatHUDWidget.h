@@ -11,5 +11,11 @@ UCLASS()
 class COOKIE_API UCkCombatHUDWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
+
+public:
+	UFUNCTION(BlueprintImplementableEvent, Category = "Life Bar")
+	void SetLifePercentage(float Percent);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Life Bar")
+	void SetBarColor(const FLinearColor& Color);
 };
