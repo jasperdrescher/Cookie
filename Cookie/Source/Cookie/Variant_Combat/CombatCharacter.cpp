@@ -876,6 +876,7 @@ void ACombatCharacter::PossessedBy(AController* NewController)
 	{
 		const ACkGamePlayerState* GamePlayerState = Cast<ACkGamePlayerState>(PlayerStateBase);
 		RefreshNameTag();
+		UpdateLifeBar();
 		BP_ApplyPlayerColorToMesh(GamePlayerState->PlayerColor);
 	}
 }
