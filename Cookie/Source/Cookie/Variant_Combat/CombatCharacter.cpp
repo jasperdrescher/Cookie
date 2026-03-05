@@ -626,6 +626,8 @@ void ACombatCharacter::Multicast_HandleDeath_Implementation()
 
 	GetMesh()->SetSimulatePhysics(true);
 
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 	OverheadWidgetComponent->SetHiddenInGame(true);
 
 	if (IsLocallyControlled())
