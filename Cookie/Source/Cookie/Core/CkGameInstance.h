@@ -12,4 +12,7 @@ UCLASS()
 class COOKIE_API UCkGameInstance : public UAdvancedFriendsGameInstance
 {
 	GENERATED_BODY()
+
+public:
+	TMap<TSharedPtr<const FUniqueNetId>, FColor> PlayerData;
 };

@@ -3,6 +3,8 @@
 #include "Core/CkGamePlayerState.h"
 
 #include "Cookie.h"
+#include "Core/CkGameInstance.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
 ACkGamePlayerState::ACkGamePlayerState()
@@ -53,6 +55,38 @@ void ACkGamePlayerState::PickRandomPlayerColor()
 		return;
 	}
 
-	const int32 RandomIndex = FMath::RandRange(0, AvailablePlayerColors.Num() - 1);
+	UGameInstance* GameInstanceBase = UGameplayStatics::GetGameInstance(GetWorld());
+	if (GameInstanceBase)
+	{
+		UCkGameInstance* GameInstance = Cast<UCkGameInstance>(GameInstanceBase);
+		if (GameInstance)
+		{
+			const FUniqueNetIdRepl& UniqueNetIdRepl = GetUniqueId();
+			TSharedPtr<const FUniqueNetId> UniqueNetId = UniqueNetIdRepl.GetUniqueNetId();
+			if (FColor* Color = GameInstance->PlayerData.Find(UniqueNetId))
+			{
+				PlayerColor = *Color;
+				return;
+			}
+		}
+	}
+
+	FRandomStream RandomStream;
+	RandomStream.Initialize(FDateTime::Now().GetTicks());
+	const int32 RandomIndex = RandomStream.RandRange(0, AvailablePlayerColors.Num() - 1);
 	PlayerColor = AvailablePlayerColors[RandomIndex];
+
+	if (GameInstanceBase)
+	{
+		UCkGameInstance* GameInstance = Cast<UCkGameInstance>(GameInstanceBase);
+		if (GameInstance)
+		{
+			const FUniqueNetIdRepl& UniqueNetIdRepl = GetUniqueId();
+			TSharedPtr<const FUniqueNetId> UniqueNetId = UniqueNetIdRepl.GetUniqueNetId();
+			if (UniqueNetId.IsValid())
+			{
+				GameInstance->PlayerData.Add(UniqueNetId, PlayerColor);
+			}
+		}
+	}
 }
