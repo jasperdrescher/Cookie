@@ -12,6 +12,7 @@ public class CookieGameEOSTarget : TargetRules
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
 
 		ExtraModuleNames.Add("Cookie");
+
 		CustomConfig = "EOS";
 
 		EnablePlugins.AddRange(
