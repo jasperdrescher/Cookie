@@ -3,10 +3,8 @@
 #include "Player/CkTextChatComponent.h"
 
 #include "Cookie.h"
-#include "CookiePlayerController.h"
 #include "Core/CkGamePlayerState.h"
 #include "GameFramework/GameStateBase.h"
-#include "Kismet/GameplayStatics.h"
 
 UCkTextChatComponent::UCkTextChatComponent()
 {
