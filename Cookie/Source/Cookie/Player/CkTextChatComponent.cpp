@@ -4,6 +4,7 @@
 
 #include "Cookie.h"
 #include "CookiePlayerController.h"
+#include "Core/CkGamePlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -42,13 +43,19 @@ void UCkTextChatComponent::Server_SendMessage_Implementation(const FString& Mess
 	if (!SenderPlayerController)
 		return;
 
-	const APlayerState* SenderPlayerState = SenderPlayerController->PlayerState;
-	if (!SenderPlayerState) 
+	const APlayerState* SenderPlayerStateBase = SenderPlayerController->PlayerState;
+	if (!SenderPlayerStateBase)
+		return;
+
+	const ACkGamePlayerState* SenderPlayerState = Cast<ACkGamePlayerState>(SenderPlayerStateBase);
+	if (!SenderPlayerState)
 		return;
 
 	const FString SenderName = SenderPlayerState->GetPlayerName();
 
 	const FUniqueNetIdRepl& SenderUniqueId = SenderPlayerState->GetUniqueId();
+
+	const FColor SenderColor = SenderPlayerState->PlayerColor;
 
 	if (!SenderUniqueId.IsValid())
 	{
@@ -71,7 +78,7 @@ void UCkTextChatComponent::Server_SendMessage_Implementation(const FString& Mess
 
 		if (UCkTextChatComponent* ClientTextChatComponent = ClientPlayerController->FindComponentByClass<UCkTextChatComponent>())
 		{
-			ClientTextChatComponent->Client_ReceiveMessage(Message, SenderName, SenderUniqueId);
+			ClientTextChatComponent->Client_ReceiveMessage(Message, SenderName, SenderUniqueId, SenderColor);
 		}
 	}
 }
@@ -98,11 +105,11 @@ void UCkTextChatComponent::Server_SendAnnouncement_Implementation(const FString&
 	}
 }
 
-void UCkTextChatComponent::Client_ReceiveMessage_Implementation(const FString& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId)
+void UCkTextChatComponent::Client_ReceiveMessage_Implementation(const FString& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId, const FColor& aSenderColor)
 {
 	FBPUniqueNetId SenderBPUniqueNetId;
 	SenderBPUniqueNetId.SetUniqueNetId(SenderUniqueNetId.GetUniqueNetId());
-	BP_ReceiveMessage(Message, SenderName, SenderBPUniqueNetId);
+	BP_ReceiveMessage(Message, SenderName, SenderBPUniqueNetId, aSenderColor);
 }
 
 void UCkTextChatComponent::Client_ReceiveAnnouncement_Implementation(const FString& Message)

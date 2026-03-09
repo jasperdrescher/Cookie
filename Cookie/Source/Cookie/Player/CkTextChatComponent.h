@@ -35,13 +35,13 @@ public:
 	void Server_SendAnnouncement(const FString& Message);
 
 	UFUNCTION(Client, Reliable)
-	void Client_ReceiveMessage(const FString& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId);
+	void Client_ReceiveMessage(const FString& Message, const FString& SenderName, const FUniqueNetIdRepl& SenderUniqueNetId, const FColor& aSenderColor);
 
 	UFUNCTION(Client, Reliable)
 	void Client_ReceiveAnnouncement(const FString& Message);
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void BP_ReceiveMessage(const FString& Message, const FString& SenderName, const FBPUniqueNetId& SenderUniqueNetId);
+	void BP_ReceiveMessage(const FString& Message, const FString& SenderName, const FBPUniqueNetId& SenderUniqueNetId, const FColor& aSenderColor);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void BP_ReceiveAnnouncement(const FString& Message);
