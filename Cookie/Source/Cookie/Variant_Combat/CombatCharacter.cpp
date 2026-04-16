@@ -324,10 +324,16 @@ void ACombatCharacter::Server_DoAttackTrace_Implementation(FName DamageSourceBon
 		for (const FHitResult& CurrentHit : OutHits)
 		{
 			// check if we've hit a damageable actor
-			ICombatDamageable* Damageable = Cast<ICombatDamageable>(CurrentHit.GetActor());
-
+			AActor* HitActor = CurrentHit.GetActor();
+			ICombatDamageable* Damageable = Cast<ICombatDamageable>(HitActor);
 			if (Damageable)
 			{
+				UMeshComponent* HitActorMeshComponent = HitActor->GetComponentByClass<UMeshComponent>();
+				if (!HitActorMeshComponent->IsSimulatingPhysics())
+				{
+					HitActorMeshComponent->SetSimulatePhysics(true);
+				}
+
 				// knock upwards and away from the impact normal
 				const FVector Impulse = (CurrentHit.ImpactNormal * -MeleeKnockbackImpulse) + (FVector::UpVector * MeleeLaunchImpulse);
 
