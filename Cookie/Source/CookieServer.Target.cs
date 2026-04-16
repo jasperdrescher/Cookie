@@ -11,6 +11,14 @@ public class CookieServerTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V6;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
 
+		ProjectDefinitions.AddRange(
+			[
+				"UE_PROJECT_STEAMSHIPPINGID=480",
+				"UE_PROJECT_STEAMPRODUCTNAME=480",
+				"UE_PROJECT_STEAMGAMEDIR=Cookie",
+				"UE_PROJECT_STEAMGAMEDESC=Cookie"
+			]);
+
 		ExtraModuleNames.Add("Cookie");
 	}
 }
